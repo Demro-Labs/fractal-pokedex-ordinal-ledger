@@ -1,0 +1,11 @@
+{
+  "name": "Fractal Pokédex Ordinals",
+  "short_name": "Pokédex Ordinals",
+  "description": "A visual index of 1,025 Pokédex Ordinals on Fractal Bitcoin.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b0d10",
+  "theme_color": "#0b0d10",
+  "icons": [{"src":"./assets/fractal-pokedex/sheets/sheet-000.webp","sizes":"960x960","type":"image/webp","purpose":"any maskable"}]
+}
