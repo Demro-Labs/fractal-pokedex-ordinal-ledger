@@ -552,7 +552,7 @@ export default function Home() {
               >
                 <div className="w-full min-w-0 border border-[#3b434d] bg-[#12161b] p-3 shadow-[0_18px_40px_rgba(0,0,0,0.18)] sm:p-4">
                   <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-[minmax(0,1fr)_220px_220px_220px_220px]">
-                    <label className="flex h-12 min-w-0 items-center gap-3 border border-[#3b434d] bg-[#12161b] px-3 transition-colors focus-within:ring-1 focus-within:ring-inset focus-within:ring-[#d99a54]">
+                    <label className="flex h-12 min-w-0 items-center gap-3 border border-[#3b434d] bg-[#12161b] px-3 transition-colors focus-within:ring-0 focus-within:border-[#3b434d]">
                       <Search size={17} className="text-[#718092]" />
                       <input
                         type="search"
@@ -568,7 +568,7 @@ export default function Home() {
                     <select
                       value={typeFilter}
                       onChange={event => setTypeFilter(event.target.value)}
-                      className="h-12 w-full min-w-0 border border-[#3b434d] bg-[#12161b] px-3 font-mono text-xs uppercase tracking-[0.12em] text-[#d9d3c6]"
+                      className="h-12 w-full min-w-0 border border-[#3b434d] bg-[#12161b] px-3 font-mono text-xs uppercase tracking-[0.12em] text-[#d9d3c6] outline-none focus:border-[#3b434d] focus:outline-none focus:ring-0"
                     >
                       <option value="all">Type / All</option>
                       {typeValues.map(value => (
@@ -580,7 +580,7 @@ export default function Home() {
                     <select
                       value={abilityFilter}
                       onChange={event => setAbilityFilter(event.target.value)}
-                      className="h-12 w-full min-w-0 border border-[#3b434d] bg-[#12161b] px-3 font-mono text-xs uppercase tracking-[0.12em] text-[#d9d3c6]"
+                      className="h-12 w-full min-w-0 border border-[#3b434d] bg-[#12161b] px-3 font-mono text-xs uppercase tracking-[0.12em] text-[#d9d3c6] outline-none focus:border-[#3b434d] focus:outline-none focus:ring-0"
                     >
                       <option value="all">Ability / All</option>
                       {abilityValues.map(value => (
@@ -595,7 +595,7 @@ export default function Home() {
                         setRarityFilter(event.target.value);
                         setPage(1);
                       }}
-                      className="h-12 w-full min-w-0 border border-[#3b434d] bg-[#12161b] px-3 font-mono text-xs uppercase tracking-[0.12em] text-[#d9d3c6]"
+                      className="h-12 w-full min-w-0 border border-[#3b434d] bg-[#12161b] px-3 font-mono text-xs uppercase tracking-[0.12em] text-[#d9d3c6] outline-none focus:border-[#3b434d] focus:outline-none focus:ring-0"
                     >
                       <option value="all">Rarity rank / All</option>
                       <option value="legendary">Legendary</option>
@@ -610,7 +610,7 @@ export default function Home() {
                         setListingFilter(event.target.value);
                         setPage(1);
                       }}
-                      className="h-12 w-full min-w-0 border border-[#3b434d] bg-[#12161b] px-3 font-mono text-xs uppercase tracking-[0.12em] text-[#d9d3c6]"
+                      className="h-12 w-full min-w-0 border border-[#3b434d] bg-[#12161b] px-3 font-mono text-xs uppercase tracking-[0.12em] text-[#d9d3c6] outline-none focus:border-[#3b434d] focus:outline-none focus:ring-0"
                     >
                       <option value="all">Listing status / All</option>
                       <option value="listed">Listed / Live</option>
