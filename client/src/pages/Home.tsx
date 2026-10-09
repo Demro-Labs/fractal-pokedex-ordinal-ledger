@@ -27,11 +27,14 @@ import {
   INSCRIPTION_BASE_URL,
   SHEET_URLS,
 } from "@/lib/collection";
+import { cacheCollectionResponse, readCachedCollection } from "@/lib/collection-cache";
 
 const PER_PAGE = 20;
 const TOTAL_ITEMS = 1025;
 const HERO_URL = SHEET_URLS[0];
 const ASSET_BASE = import.meta.env.BASE_URL;
+const HERO_AVIF_URL = `${ASSET_BASE}assets/brand/pokedex-hero.avif`;
+const HERO_MOBILE_AVIF_URL = `${ASSET_BASE}assets/brand/pokedex-hero-mobile.avif`;
 const SOCIAL_ASSET_BASE = `${ASSET_BASE}assets/brand/social/`;
 const FRACTAL_ORDINALS_URL = `${ASSET_BASE}assets/brand/fractal-ordinals.jpeg`;
 const POKEDEX_LOGO_URL = `${ASSET_BASE}assets/brand/pokedex-logo.png`;
@@ -297,18 +300,34 @@ export default function Home() {
   });
   useEffect(() => {
     const controller = new AbortController();
-    fetch(COLLECTION_DATA_URL, { signal: controller.signal })
-      .then(response => {
+    let active = true;
+    let hasCachedData = false;
+    const load = async () => {
+      try {
+        const cached = await readCachedCollection<PokemonRecord[]>(COLLECTION_DATA_URL);
+        if (active && cached) {
+          hasCachedData = true;
+          setRecords(cached.data);
+          setSnapshotDate(cached.lastModified);
+          setLoading(false);
+        }
+        const response = await fetch(COLLECTION_DATA_URL, { signal: controller.signal, cache: "no-cache" });
         if (!response.ok) throw new Error("Unable to load the Pokédex ledger.");
-        setSnapshotDate(response.headers.get("last-modified") || "");
-        return response.json();
-      })
-      .then(setRecords)
-      .catch((fetchError: Error) => {
-        if (fetchError.name !== "AbortError") setError(fetchError.message);
-      })
-      .finally(() => setLoading(false));
-    return () => controller.abort();
+        void cacheCollectionResponse(COLLECTION_DATA_URL, response);
+        const data = await response.json() as PokemonRecord[];
+        if (active) {
+          setSnapshotDate(response.headers.get("last-modified") || "");
+          setRecords(data);
+          setError("");
+        }
+      } catch (fetchError) {
+        if (active && (fetchError as Error).name !== "AbortError" && !hasCachedData) setError((fetchError as Error).message);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    void load();
+    return () => { active = false; controller.abort(); };
   }, []);
   useEffect(() => {
     const timeout = window.setTimeout(() => setQuery(queryInput), 180);
@@ -551,14 +570,14 @@ export default function Home() {
         <main className="min-w-0">
           <section
             className="relative isolate overflow-hidden border-b border-[#2c323a] px-5 py-10 sm:px-8 sm:py-14 lg:px-12 lg:py-20"
-            style={{
-              backgroundImage: `url(${HERO_URL})`,
-              backgroundPosition: "center",
-              backgroundSize: "cover",
-            }}
           >
-            <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(11,13,16,0.99)_0%,rgba(11,13,16,0.92)_48%,rgba(11,13,16,0.42)_100%)]" />
-            <div className="max-w-3xl">
+            <picture className="absolute inset-0 z-0 block" aria-hidden="true">
+              <source media="(max-width: 640px)" type="image/avif" srcSet={`${HERO_MOBILE_AVIF_URL} 640w`} />
+              <source type="image/avif" srcSet={`${HERO_AVIF_URL} 960w`} />
+              <img src={HERO_URL} alt="" width={960} height={960} fetchPriority="high" decoding="async" className="h-full w-full object-cover object-center" />
+            </picture>
+            <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(90deg,rgba(11,13,16,0.99)_0%,rgba(11,13,16,0.92)_48%,rgba(11,13,16,0.42)_100%)]" />
+            <div className="relative z-20 max-w-3xl">
               <p className="mb-6 font-mono text-[10px] uppercase tracking-[0.24em] text-[#d99a54]">
                 National Pokédex / Fractal edition
               </p>
