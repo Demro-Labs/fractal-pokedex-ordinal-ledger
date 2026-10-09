@@ -1,16 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpRight,
   ChevronLeft,
   ChevronRight,
   ExternalLink,
   Filter,
+  Heart,
   Loader2,
   Search,
   X,
 } from "lucide-react";
 import { RarityBadge, LiveDataBlock } from "@/components/CollectionSignals";
-import { MarketPanel } from "@/components/MarketPanel";
+const MarketPanel = lazy(() => import("@/components/MarketPanel").then(module => ({ default: module.MarketPanel })));
 import { createRarityIndex } from "@/lib/rarity";
 import { fetchLiveInscription, type LiveInscription } from "@/lib/live";
 import {
@@ -242,14 +243,23 @@ function DetailPanel({
     </div>
   );
 }
+function readUrlParam(key: string, fallback = "") {
+  return new URLSearchParams(window.location.search).get(key) ?? fallback;
+}
+
+function readUrlPage() {
+  const value = Number.parseInt(readUrlParam("page", "1"), 10);
+  return Number.isFinite(value) && value > 0 ? value : 1;
+}
+
 export default function Home() {
   const [records, setRecords] = useState<PokemonRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [query, setQuery] = useState("");
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [abilityFilter, setAbilityFilter] = useState("all");
-  const [page, setPage] = useState(1);
+  const [query, setQuery] = useState(() => readUrlParam("q"));
+  const [typeFilter, setTypeFilter] = useState(() => readUrlParam("type", "all"));
+  const [abilityFilter, setAbilityFilter] = useState(() => readUrlParam("ability", "all"));
+  const [page, setPage] = useState(readUrlPage);
   const [selected, setSelected] = useState<PokemonRecord | null>(null);
   const [liveData, setLiveData] = useState<Record<string, LiveInscription>>({});
   const [liveLoading, setLiveLoading] = useState(false);
@@ -257,19 +267,35 @@ export default function Home() {
   const [marketLoading, setMarketLoading] = useState(true);
   const [marketError, setMarketError] = useState("");
   const [marketPage, setMarketPage] = useState(0);
-  const [rarityFilter, setRarityFilter] = useState("all");
-  const [listingFilter, setListingFilter] = useState("all");
+  const [rarityFilter, setRarityFilter] = useState(() => readUrlParam("rarity", "all"));
+  const [listingFilter, setListingFilter] = useState(() => readUrlParam("listing", "all"));
   const [listedTokenIds, setListedTokenIds] = useState<Set<string>>(new Set());
   const [allListings, setAllListings] = useState<LiveMarketListing[]>([]);
   const [allListingsLoaded, setAllListingsLoaded] = useState(false);
   const [allListingsLoading, setAllListingsLoading] = useState(false);
   const [allListingsError, setAllListingsError] = useState("");
   const galleryRef = useRef<HTMLElement>(null);
+  const marketRef = useRef<HTMLDivElement>(null);
+  const [marketReady, setMarketReady] = useState(false);
+  const [snapshotDate, setSnapshotDate] = useState("");
+  const [favorites, setFavorites] = useState<Set<string>>(() => {
+    try {
+      return new Set(JSON.parse(localStorage.getItem("catalog-favorites") || "[]"));
+    } catch {
+      return new Set();
+    }
+  });
+  const toggleFavorite = (id: string) => setFavorites(current => {
+    const next = new Set(current);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
   useEffect(() => {
     const controller = new AbortController();
     fetch(COLLECTION_DATA_URL, { signal: controller.signal })
       .then(response => {
         if (!response.ok) throw new Error("Unable to load the Pokédex ledger.");
+        setSnapshotDate(response.headers.get("last-modified") || "");
         return response.json();
       })
       .then(setRecords)
@@ -279,6 +305,27 @@ export default function Home() {
       .finally(() => setLoading(false));
     return () => controller.abort();
   }, []);
+  useEffect(() => {
+    try { localStorage.setItem("catalog-favorites", JSON.stringify(Array.from(favorites))); } catch { /* storage may be unavailable */ }
+  }, [favorites]);
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) { setMarketReady(true); observer.disconnect(); }
+    }, { rootMargin: "480px" });
+    if (marketRef.current) observer.observe(marketRef.current);
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (query) params.set("q", query);
+    if (typeFilter !== "all") params.set("type", typeFilter);
+    if (abilityFilter !== "all") params.set("ability", abilityFilter);
+    if (rarityFilter !== "all") params.set("rarity", rarityFilter);
+    if (listingFilter !== "all") params.set("listing", listingFilter);
+    if (page > 1) params.set("page", String(page));
+    const next = `${window.location.pathname}${params.toString() ? `?${params}` : ""}${window.location.hash}`;
+    window.history.replaceState(null, "", next);
+  }, [query, page, typeFilter, abilityFilter, rarityFilter, listingFilter]);
   const rarity = useMemo(() => createRarityIndex(records), [records]);
   useEffect(() => {
     const controller = new AbortController();
@@ -521,32 +568,37 @@ export default function Home() {
               </div>
             </div>
           </section>
-          <MarketPanel
-            allListings={allListings}
-            allListingsLoaded={allListingsLoaded}
-            allListingsLoading={allListingsLoading}
-            allListingsError={allListingsError}
-            market={market}
-            loading={marketLoading}
-            error={marketError}
-            page={marketPage}
-            onPage={setMarketPage}
-            imageForListing={listingImage}
-          />
+          <div ref={marketRef} className="min-h-24">
+            {marketReady ? (
+              <Suspense fallback={<div className="flex min-h-24 items-center justify-center border-b border-[#2c323a] font-mono text-[10px] uppercase tracking-[0.14em] text-[#718092]">Preparing live market…</div>}>
+                <MarketPanel
+                  allListings={allListings}
+                  allListingsLoaded={allListingsLoaded}
+                  allListingsLoading={allListingsLoading}
+                  allListingsError={allListingsError}
+                  market={market}
+                  loading={marketLoading}
+                  error={marketError}
+                  page={marketPage}
+                  onPage={setMarketPage}
+                  imageForListing={listingImage}
+                />
+              </Suspense>
+            ) : (
+              <div className="flex min-h-24 items-center justify-center border-b border-[#2c323a] font-mono text-[10px] uppercase tracking-[0.14em] text-[#718092]">Live market loads when you reach it</div>
+            )}
+          </div>
           {loading ? (
             <div className="flex min-h-[50vh] items-center justify-center">
               <div className="flex items-center gap-3 font-mono text-xs uppercase tracking-[0.16em] text-[#9ea7b3]">
-                <Loader2 size={16} className="animate-spin text-[#d99a54]" />{" "}
-                Opening the Pokédex…
+                <Loader2 size={16} className="animate-spin text-[#d99a54]" /> Opening the Pokédex…
               </div>
             </div>
           ) : error ? (
-            <div className="m-8 border border-[#a45e54] p-6 font-mono text-sm text-[#f3efe5]">
-              {error}
-            </div>
+            <div className="m-8 border border-[#a45e54] p-6 font-mono text-sm text-[#f3efe5]">{error}</div>
           ) : (
-            <>
-              <section
+          <>
+          <section
                 className="border-y border-[#2c323a] bg-[#11161b] px-5 py-5 shadow-[inset_0_1px_0_rgba(243,239,229,0.04)] sm:px-8 lg:px-12"
                 aria-label="Catalogue filters"
               >
@@ -668,8 +720,17 @@ export default function Home() {
                       return (
                         <article
                           key={record.id}
-                          className="group border border-[#3b434d] border-t-2 border-t-[#d99a54]/60 bg-[#12161b] p-3 shadow-[0_10px_24px_rgba(0,0,0,0.16)] transition-all hover:-translate-y-0.5 hover:border-[#d99a54]/70"
+                          className="group relative border border-[#3b434d] border-t-2 border-t-[#d99a54]/60 bg-[#12161b] p-3 shadow-[0_10px_24px_rgba(0,0,0,0.16)] transition-all hover:-translate-y-0.5 hover:border-[#d99a54]/70"
                         >
+                        <button
+                          type="button"
+                          onClick={() => toggleFavorite(record.id)}
+                          aria-pressed={favorites.has(record.id)}
+                          aria-label={favorites.has(record.id) ? "Remove from favorites" : "Add to favorites"}
+                          className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center border border-[#3b434d] bg-[#0b0d10]/85 text-[#d99a54] backdrop-blur-sm transition-colors hover:border-[#d99a54]"
+                        >
+                          <Heart size={15} fill={favorites.has(record.id) ? "currentColor" : "none"} />
+                        </button>
                           <button
                             className="block w-full text-left"
                             onClick={() => setSelected(record)}
@@ -723,7 +784,7 @@ export default function Home() {
                   />
                 </div>
               </section>
-            </>
+          </>
           )}
           <footer className="border-t border-[#2c323a] bg-[#12161b] px-5 py-10 sm:px-8 lg:px-12">
             <div className="grid gap-10 xl:grid-cols-[1fr_1.4fr]">
