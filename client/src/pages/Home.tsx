@@ -632,7 +632,7 @@ export default function Home() {
                 ref={galleryRef}
                 className="ledger-sheet px-5 py-8 sm:px-8 lg:px-12"
               >
-                <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+                <div className="mb-6 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
                   <div>
                     <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#d99a54]">
                       Plate {String(page).padStart(3, "0")}
@@ -641,9 +641,18 @@ export default function Home() {
                       Pokédex index
                     </h2>
                   </div>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#718092]">
-                    Showing {first}–{last} / {filtered.length.toLocaleString()}
-                  </p>
+                  <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 sm:justify-end">
+                    <span
+                      aria-hidden="true"
+                      className="pointer-events-none shrink-0 font-mono text-5xl font-semibold leading-none tracking-[-0.12em] text-[#2c323a]/80 sm:text-7xl"
+                    >
+                      {String(page).padStart(3, "0")}
+                    </span>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#718092]">
+                      Showing {first}–{last} /{" "}
+                      {filtered.length.toLocaleString()}
+                    </p>
+                  </div>
                 </div>
                 <div className="mb-6">
                   <Pagination
