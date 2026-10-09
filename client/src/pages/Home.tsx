@@ -552,7 +552,7 @@ export default function Home() {
               >
                 <div className="w-full min-w-0">
                   <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-[minmax(0,1fr)_220px_220px_220px_220px]">
-                    <label className="flex min-w-0 items-center gap-3 border border-[#3b434d] bg-[#12161b] px-3 transition-colors focus-within:border-[#d99a54] focus-within:ring-1 focus-within:ring-[#d99a54]">
+                    <label className="flex h-12 min-w-0 items-center gap-3 border border-[#3b434d] bg-[#12161b] px-3 transition-colors focus-within:border-[#d99a54]">
                       <Search size={17} className="text-[#718092]" />
                       <input
                         type="search"
@@ -560,7 +560,7 @@ export default function Home() {
                         onChange={event => setQuery(event.target.value)}
                         autoComplete="off"
                         spellCheck={false}
-                        className="h-12 w-full min-w-0 bg-transparent font-mono text-xs text-[#f3efe5] outline-none placeholder:text-[#718092]"
+                        className="h-full w-full min-w-0 bg-transparent font-mono text-xs text-[#f3efe5] outline-none placeholder:text-[#718092]"
                         placeholder="Search by name, ID, type or stat"
                         aria-label="Search the Pokédex"
                       />
