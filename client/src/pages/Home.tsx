@@ -547,7 +547,7 @@ export default function Home() {
           ) : (
             <>
               <section
-                className="border-b border-[#2c323a] bg-[#14191f] px-5 py-5 sm:px-8 lg:px-12"
+                className="border-y border-[#2c323a] bg-[#11161b] px-5 py-5 shadow-[inset_0_1px_0_rgba(243,239,229,0.04)] sm:px-8 lg:px-12"
                 aria-label="Catalogue filters"
               >
                 <div className="w-full min-w-0">
@@ -630,11 +630,11 @@ export default function Home() {
               </section>
               <section
                 ref={galleryRef}
-                className="ledger-sheet px-5 py-8 sm:px-8 lg:px-12"
+                className="ledger-sheet border-x border-[#2c323a]/70 px-5 py-8 sm:px-8 lg:px-12"
               >
-                <div className="mb-6 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                <div className="mb-6 grid gap-3 border-b border-[#2c323a] pb-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
                   <div>
-                    <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#d99a54]">
+                    <p className="border-l-2 border-[#d99a54] pl-3 font-mono text-[10px] uppercase tracking-[0.2em] text-[#d99a54]">
                       Plate {String(page).padStart(3, "0")}
                     </p>
                     <h2 className="mt-3 font-display text-3xl font-semibold tracking-[-0.04em] text-[#f3efe5]">
@@ -644,7 +644,7 @@ export default function Home() {
                   <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 sm:justify-end">
                     <span
                       aria-hidden="true"
-                      className="pointer-events-none shrink-0 font-mono text-5xl font-semibold leading-none tracking-[-0.12em] text-[#2c323a]/80 sm:text-7xl"
+                      className="pointer-events-none shrink-0 font-mono text-5xl font-semibold leading-none tracking-[-0.12em] text-[#2c323a]/70 sm:text-7xl"
                     >
                       {String(page).padStart(3, "0")}
                     </span>
@@ -662,13 +662,13 @@ export default function Home() {
                   />
                 </div>
                 {visible.length ? (
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                     {visible.map(record => {
                       const token = rarity.token(record);
                       return (
                         <article
                           key={record.id}
-                          className="group border border-[#2c323a] bg-[#12161b] p-2 transition-colors hover:border-[#d99a54]/60"
+                          className="group border border-[#2c323a] bg-[#12161b] p-3 transition-colors hover:border-[#d99a54]/60"
                         >
                           <button
                             className="block w-full text-left"
