@@ -828,18 +828,23 @@ export default function Home() {
           </>
           )}
           <footer className="border-t border-[#2c323a] bg-[#12161b] px-5 py-10 sm:px-8 lg:px-12">
-            <div className="grid gap-10 xl:grid-cols-[1fr_1.4fr]">
-              <div>
-                <p className="font-display text-lg font-semibold">
-                  Fractal Pokédex <span className="text-[#d99a54]">/</span>{" "}
-                  Ordinals
-                </p>
-                <p className="mt-2 max-w-md font-mono text-[10px] leading-5 text-[#9ea7b3]">
-                  An independent visual index built from the supplied Pokédex
-                  inscriptions and metadata. Verify every record at the source.
-                </p>
+            <div className="space-y-8">
+              <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                <div className="max-w-md">
+                  <p className="flex items-baseline gap-2 font-display tracking-[-0.04em]">
+                    <span className="text-lg font-semibold">Fractal Pokédex</span>
+                    <span className="text-[#d99a54]">/</span>
+                    <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9ea7b3]">
+                      Ordinals
+                    </span>
+                  </p>
+                  <p className="mt-2 font-sans text-xs leading-5 text-[#9ea7b3]">
+                    An independent visual index built from the supplied Pokédex
+                    inscriptions and metadata. Verify every record at the source.
+                  </p>
+                </div>
                 <div
-                  className="mt-6 flex flex-wrap items-center gap-3"
+                  className="flex flex-wrap items-center gap-3"
                   aria-label="Social links"
                 >
                   {[
@@ -871,7 +876,7 @@ export default function Home() {
                       rel="noreferrer"
                       aria-label={social.label}
                       title={social.label}
-                      className="flex h-11 w-11 items-center justify-center border border-[#3b434d] bg-[#12161b]/80 hover:border-[#d99a54] hover:bg-[#0b0d10]"
+                      className="flex h-11 w-11 items-center justify-center border border-[#3b434d] bg-[#12161b]/80 transition-colors hover:border-[#d99a54] hover:bg-[#0b0d10]"
                     >
                       <img
                         src={social.src}
@@ -988,7 +993,7 @@ export default function Home() {
                       href={partner.href}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex min-h-16 items-center gap-3 border border-[#2c323a] bg-[#12161b]/70 px-3 hover:border-[#d99a54] hover:bg-[#0b0d10]"
+                      className="flex min-h-16 items-center gap-3 border border-[#2c323a] bg-[#12161b]/70 px-3 transition-colors hover:border-[#d99a54] hover:bg-[#0b0d10]"
                     >
                       <img
                         src={partner.src}
@@ -1002,12 +1007,12 @@ export default function Home() {
                   ))}
                 </div>
               </div>
-            </div>
-            <div className="mt-8 flex flex-col gap-2 border-t border-[#2c323a] pt-6 font-mono text-[10px] leading-5 text-[#718092] sm:flex-row sm:items-center sm:justify-between">
-              <p>
-                Copyright © 2026 Fractal Pokédex Ordinals. All rights reserved.
-              </p>
-              <p>Powered by Fractal Ordinals / UniSat / Fractal Bitcoin</p>
+              <div className="flex flex-col gap-2 font-mono text-[10px] leading-5 text-[#718092] sm:flex-row sm:items-center sm:justify-between">
+                <p>
+                  Copyright © 2026 Fractal Pokédex Ordinals. All rights reserved.
+                </p>
+                <p>Powered by Fractal Ordinals / UniSat / Fractal Bitcoin</p>
+              </div>
             </div>
           </footer>
         </main>
