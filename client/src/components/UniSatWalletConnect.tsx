@@ -46,6 +46,7 @@ type UniSatProvider = {
     inscriptionId: string,
     options?: { feeRate?: number }
   ) => Promise<{ txid: string }>;
+  sendBitcoin?: (address: string, satoshis: number, options?: { feeRate?: number }) => Promise<string | { txid?: string }>;
   getPublicKey?: () => Promise<string>;
   signPsbt?: (
     psbtHex: string,
