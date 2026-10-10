@@ -1,35 +1,96 @@
-# Ordinal Punks / Ledger
+# Fractal Pokédex Ordinal Ledger
 
-A visual catalogue for all 10,000 Ordinal Punks inscribed on Fractal Bitcoin. The interface presents 20 records per plate, exposes the supplied metadata for each punk, and links every inscription ID directly to its UniSat source page.
+Catalogue visuel du **Fractal Pokédex Ordinal Ledger**, avec consultation des inscriptions, métadonnées, galerie, données live UniSat et outils wallet.
 
-## What is included
+## Fonctionnalités
 
-The catalogue loads the supplied `inscriptions.json` data, including the inscription ID, name, description, token ID, file name and trait attributes. The 10,000 source PNGs are represented in optimized 100-tile WebP sheets so the browser only fetches the sheets needed for the current page. Each card provides a clickable inscription ID, a copper UniSat source badge and a full metadata record in the detail panel.
+- Galerie paginée des inscriptions du Pokédex avec images et métadonnées locales.
+- Recherche et consultation des informations d’une inscription : inscription ID, nom, description, token ID, fichier et traits.
+- Panneau de détail avec propriétaire, créateur et état de listing UniSat lorsque les données live sont disponibles.
+- Chargement automatique des inscriptions détenues après connexion du wallet UniSat.
+- Sélection des inscriptions éligibles au transfert sans exposer les inscriptions ou actifs protocolaires verrouillés.
+- Transfert sécurisé par PSBT avec contrôle de la sortie d’inscription et prévention des sorties dust.
+- Chaque transfert doit être approuvé explicitement dans UniSat ; le site ne signe ni ne diffuse automatiquement de transaction.
+- Upload et inscription UniSat avec création d’ordre, paiement et approbation dans le wallet.
+- Marché live du Pokédex alimenté par le Worker Cloudflare et l’API UniSat.
+- Liens directs vers la collection et les inscriptions sur UniSat.
 
-The collection source is [UniSat Fractal Bitcoin](https://fractal.unisat.io/market/collection?collectionId=opunk). Individual records use the direct URL format `https://fractal.unisat.io/inscription/{inscription_id}`.
+## Wallet et transfert
 
-## Local development
+La connexion se fait via l’extension UniSat. Une fois le wallet connecté, les inscriptions détenues sont chargées automatiquement.
+
+Le flux de transfert PSBT utilise l’adresse destinataire fournie par l’utilisateur et ne sélectionne que des inscriptions compatibles. Les UTXO de frais sont récupérés via :
+
+```text
+GET https://fractal-ordinal-live.servostar23.workers.dev/api/spendable-utxos
+```
+
+Le Worker vérifie l’adresse, le montant, le script, l’absence d’inscription et l’absence d’actifs protocolaires signalés avant de retourner un UTXO utilisable. Il ne peut pas contourner la politique dust du réseau.
+
+> Vérifier soigneusement l’adresse destinataire et le récapitulatif dans UniSat avant toute signature.
+
+## Upload et inscription
+
+Le panneau d’inscription permet de préparer un fichier, créer un ordre UniSat et suivre son statut. La clé API UniSat est conservée côté Worker Cloudflare dans le secret `UNISAT_API_KEY` et n’est jamais exposée au navigateur.
+
+Le paiement, la signature et l’approbation finale sont toujours réalisés par l’utilisateur dans UniSat.
+
+## Architecture live
+
+Les fonctions live utilisent le Worker Cloudflare partagé :
+
+```text
+https://fractal-ordinal-live.servostar23.workers.dev
+```
+
+Routes principales :
+
+- `/api/market` — données du marché live du Pokédex ;
+- `/api/live-inscription` — propriétaire, créateur et listing d’une inscription ;
+- `/api/spendable-utxos` — UTXO de frais admissibles au transfert PSBT ;
+- `/api/inscribe/order` — création et suivi des ordres d’inscription.
+
+Les réponses live peuvent être incomplètes ou temporairement indisponibles. Le frontend utilise des valeurs par défaut sûres afin que les détails locaux de l’inscription restent consultables.
+
+## Développement local
 
 ```bash
 pnpm install
 pnpm run dev
 ```
 
-The project is a React 19 + Vite + Tailwind 4 static frontend. Type checking and the production build can be verified with:
+Validation TypeScript et build de production :
 
 ```bash
 pnpm run check
 pnpm run build
 ```
 
-## Design direction
+Le projet utilise React 19, Vite, Tailwind CSS 4 et TypeScript. Pour lancer le serveur produit après compilation :
 
-The visual system follows **Inscription Ledger**: warm archive paper, charcoal ink, muted Copper Index accents, monospaced record fields and an asymmetric catalogue layout. The interface is deliberately documentary rather than marketplace-like, with UniSat treated as the primary source for verification.
+```bash
+pnpm run start
+```
 
-## Source data
+## Déploiement
 
-The source archive supplied for this project contains 10,000 1024×1024 PNG files and a 10,000-record JSON metadata file. The build pipeline used during preparation is documented outside the frontend source because the deployed interface consumes the optimized manifest and sprite sheets.
+Le site est publié automatiquement sur GitHub Pages depuis `main` par le workflow du dépôt.
 
-## Notes
+URL de production :
 
-The repository is self-contained for GitHub Pages: the complete six-megabyte metadata manifest, 100 optimized WebP sprite sheets containing all 10,000 images, and the four brand assets live under `client/public/assets/`. Vite automatically switches to the `/ordinal-punks-collection/` base path in GitHub Actions, and the included workflow deploys the built `dist/public` directory to GitHub Pages.
+```text
+https://demro-labs.github.io/fractal-pokedex-ordinal-ledger/
+```
+
+Vite utilise automatiquement la base `/fractal-pokedex-ordinal-ledger/` lors du build GitHub Pages.
+
+## Données et assets
+
+Les métadonnées, le manifeste de collection, les images optimisées et les assets de marque sont stockés dans `client/public/assets/`. La consultation locale ne dépend pas du marché live.
+
+## Sécurité et limites
+
+- La clé UniSat reste côté Worker et n’est jamais incluse dans le bundle frontend.
+- UniSat demande l’approbation de l’utilisateur pour les signatures, paiements et inscriptions.
+- Le flux PSBT ne contourne pas la politique dust de Fractal Bitcoin.
+- Les informations de marché, de propriétaire et d’inscription dépendent de l’API UniSat.
