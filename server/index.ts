@@ -13,7 +13,7 @@ async function startServer() {
   app.use((_req, res, next) => {
     res.setHeader(
       "Content-Security-Policy",
-      "default-src 'none'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src-attr 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://fractal-ordinal-live.servostar23.workers.dev; manifest-src 'self'; worker-src 'self' blob:; frame-src 'none'; upgrade-insecure-requests"
+      "default-src 'none'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src-attr 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src https://mempool.space https://mempool.fractalbitcoin.io 'self' https://fractal-ordinal-live.servostar23.workers.dev; manifest-src 'self'; worker-src 'self' blob:; frame-src 'none'; upgrade-insecure-requests"
     );
     res.setHeader(
       "Permissions-Policy",
