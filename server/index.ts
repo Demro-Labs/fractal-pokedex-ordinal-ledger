@@ -1,10 +1,13 @@
 import express from "express";
+import rateLimit from "express-rate-limit";
 import { createServer } from "http";
 import path from "path";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const SPA_RATE_WINDOW_MS = 60_000;
+const SPA_RATE_MAX_REQUESTS = 120;
 
 async function startServer() {
   const app = express();
@@ -37,8 +40,15 @@ async function startServer() {
 
   app.use(express.static(staticPath));
 
+  const spaRateLimit = rateLimit({
+    windowMs: SPA_RATE_WINDOW_MS,
+    limit: SPA_RATE_MAX_REQUESTS,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+  });
+
   // Handle client-side routing without swallowing API paths.
-  app.get(/^\/(?!api(?:\/|$)).*/, (_req, res) => {
+  app.get(/^\/(?!api(?:\/|$)).*/, spaRateLimit, (_req, res) => {
     res.sendFile(path.join(staticPath, "index.html"));
   });
 
