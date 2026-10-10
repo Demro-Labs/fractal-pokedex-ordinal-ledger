@@ -128,6 +128,11 @@ export function UniSatWalletConnect() {
                 ? "Connect only when you choose. No signature is requested here."
                 : "UniSat Wallet extension not detected."}
         </p>
+        {connectedToFractal && (
+          <p className="mt-1 font-mono text-[9px] text-[#718092]">
+            Clear session hides this address here; revoke site access in UniSat to remove its permission.
+          </p>
+        )}
         {error && <p className="mt-2 font-mono text-[10px] text-[#e08b7d]" role="alert">{error}</p>}
       </div>
       <div className="flex flex-wrap items-center gap-2">
@@ -137,7 +142,7 @@ export function UniSatWalletConnect() {
             onClick={() => { setAddress(null); setChain(null); setError(""); }}
             className="border border-[#3b434d] px-3 py-2 font-mono text-[10px] uppercase tracking-[0.1em] text-[#d9d3c6] hover:border-[#d99a54]"
           >
-            Disconnect
+            Clear session
           </button>
         ) : address ? (
           <button
