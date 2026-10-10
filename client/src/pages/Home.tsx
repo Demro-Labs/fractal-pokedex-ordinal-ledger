@@ -611,7 +611,7 @@ export default function Home() {
               </div>
             </div>
           </section>
-          <div ref={marketRef} className="min-h-24">
+          <div id="live-market" ref={marketRef} className="min-h-24">
             {marketReady ? (
               <Suspense fallback={<div className="flex min-h-24 items-center justify-center border-b border-[#2c323a] font-mono text-[10px] uppercase tracking-[0.14em] text-[#718092]">Preparing live market…</div>}>
                 <MarketPanel
