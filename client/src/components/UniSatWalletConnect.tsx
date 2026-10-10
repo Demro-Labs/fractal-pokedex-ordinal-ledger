@@ -65,6 +65,7 @@ export function UniSatWalletConnect() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [inscriptions, setInscriptions] = useState<UniSatInscription[]>([]);
+  const [inscriptionsLoaded, setInscriptionsLoaded] = useState(false);
   const [inscriptionTotal, setInscriptionTotal] = useState(0);
   const [inscriptionCursor, setInscriptionCursor] = useState(0);
   const [selectedInscriptionId, setSelectedInscriptionId] = useState("");
@@ -92,13 +93,16 @@ export function UniSatWalletConnect() {
             : "Load your UniSat inscriptions first; the transfer will only use an inscription owned by this account."
           : "Connect UniSat on Fractal Bitcoin, then load your inscriptions before transferring."
       );
+      if (address && chain?.enum === FRACTAL_MAINNET && !inscriptionsLoaded && !busy) {
+        void loadInscriptions();
+      }
     };
     window.addEventListener("pokedex:request-transfer", handleTransferRequest);
     if (pendingTransferRequest) {
       handleTransferRequest(new CustomEvent("pokedex:request-transfer", { detail: { inscriptionId: pendingTransferRequest } }));
     }
     return () => window.removeEventListener("pokedex:request-transfer", handleTransferRequest);
-  }, [address, chain, inscriptions]);
+  }, [address, chain, inscriptions, inscriptionsLoaded, busy]);
 
   useEffect(() => {
     if (!pendingTransferRequest) return;
@@ -113,6 +117,7 @@ export function UniSatWalletConnect() {
 
   const clearOwnedInscriptions = () => {
     setInscriptions([]);
+    setInscriptionsLoaded(false);
     setInscriptionTotal(0);
     setInscriptionCursor(0);
     setSelectedInscriptionId("");
@@ -244,6 +249,7 @@ export function UniSatWalletConnect() {
         ? [...previous, ...valid.filter(item => !previous.some(existing => existing.inscriptionId === item.inscriptionId))]
         : valid
       );
+      setInscriptionsLoaded(true);
       setInscriptionTotal(Number.isFinite(page.total) ? page.total : valid.length);
       setInscriptionCursor(cursor + pageItems.length);
       setSelectedInscriptionId("");
