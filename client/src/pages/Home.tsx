@@ -28,6 +28,7 @@ import {
   SHEET_URLS,
 } from "@/lib/collection";
 import { cacheCollectionResponse, readCachedCollection } from "@/lib/collection-cache";
+import { requestUniSatTransfer } from "@/components/UniSatWalletConnect";
 
 const PER_PAGE = 20;
 const TOTAL_ITEMS = 1025;
@@ -140,12 +141,14 @@ function Pagination({
 function DetailPanel({
   record,
   onClose,
+  onTransfer,
   rarity,
   live,
   liveLoading,
 }: {
   record: PokemonRecord;
   onClose: () => void;
+  onTransfer: (inscriptionId: string) => void;
   rarity: ReturnType<typeof createRarityIndex>;
   live: LiveInscription | null;
   liveLoading: boolean;
@@ -241,6 +244,13 @@ function DetailPanel({
             >
               Open UniSat source <ExternalLink size={15} />
             </a>
+            <button
+              type="button"
+              className="mt-3 inline-flex min-h-12 w-full items-center justify-center gap-2 border border-[#d99a54] px-5 font-mono text-xs uppercase tracking-[0.14em] text-[#f2bd63] hover:bg-[#d99a54]/10"
+              onClick={() => onTransfer(record.id)}
+            >
+              Transfer this inscription
+            </button>
           </div>
         </div>
       </section>
@@ -808,6 +818,16 @@ export default function Home() {
                           >
                             View inscription <ExternalLink size={11} />
                           </a>
+                          <button
+                            type="button"
+                            className="mt-2 flex w-full items-center justify-center gap-1 border border-[#d99a54]/70 py-2 font-mono text-[9px] uppercase tracking-[0.1em] text-[#f2bd63] hover:bg-[#d99a54]/10"
+                            onClick={event => {
+                              event.stopPropagation();
+                              requestUniSatTransfer(record.id);
+                            }}
+                          >
+                            Transfer <ArrowUpRight size={11} />
+                          </button>
                         </article>
                       );
                     })}
@@ -1021,6 +1041,7 @@ export default function Home() {
         <DetailPanel
           record={selected}
           onClose={() => setSelected(null)}
+          onTransfer={requestUniSatTransfer}
           rarity={rarity}
           live={liveData[selected.id] ?? null}
           liveLoading={liveLoading}

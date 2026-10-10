@@ -42,6 +42,17 @@ const FRACTAL_MAINNET = "FRACTAL_BITCOIN_MAINNET";
 const MARKETPLACE_URL = "https://fractal.unisat.io/market/collection?collectionId=pokedex";
 const INSCRIPTIONS_PAGE_SIZE = 50;
 const INSCRIPTION_ID_PATTERN = /^[a-f0-9]{64}i\d+$/i;
+let pendingTransferRequest: string | null = null;
+
+export function requestUniSatTransfer(inscriptionId: string) {
+  if (!INSCRIPTION_ID_PATTERN.test(inscriptionId)) return;
+  pendingTransferRequest = inscriptionId;
+  window.dispatchEvent(new CustomEvent("pokedex:request-transfer", { detail: { inscriptionId } }));
+  document.getElementById("live-market")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  window.setTimeout(() => {
+    window.dispatchEvent(new CustomEvent("pokedex:request-transfer", { detail: { inscriptionId } }));
+  }, 700);
+}
 
 function shortAddress(address: string) {
   return `${address.slice(0, 8)}…${address.slice(-6)}`;
@@ -62,6 +73,43 @@ export function UniSatWalletConnect() {
   const [transferBusy, setTransferBusy] = useState(false);
   const [transferError, setTransferError] = useState("");
   const [txid, setTxid] = useState("");
+
+  useEffect(() => {
+    const handleTransferRequest = (event: Event) => {
+      const detail = (event as CustomEvent<{ inscriptionId?: unknown }>).detail;
+      const requestedId = typeof detail?.inscriptionId === "string" ? detail.inscriptionId : "";
+      if (!INSCRIPTION_ID_PATTERN.test(requestedId)) return;
+      pendingTransferRequest = requestedId;
+      setSelectedInscriptionId(inscriptions.some(item => item.inscriptionId === requestedId) ? requestedId : "");
+      setConfirmed(false);
+      setTxid("");
+      setTransferError(
+        address && chain?.enum === FRACTAL_MAINNET
+          ? inscriptions.length > 0
+            ? inscriptions.some(item => item.inscriptionId === requestedId)
+              ? ""
+              : "This Pokémon inscription is not among the inscriptions loaded from this UniSat account."
+            : "Load your UniSat inscriptions first; the transfer will only use an inscription owned by this account."
+          : "Connect UniSat on Fractal Bitcoin, then load your inscriptions before transferring."
+      );
+    };
+    window.addEventListener("pokedex:request-transfer", handleTransferRequest);
+    if (pendingTransferRequest) {
+      handleTransferRequest(new CustomEvent("pokedex:request-transfer", { detail: { inscriptionId: pendingTransferRequest } }));
+    }
+    return () => window.removeEventListener("pokedex:request-transfer", handleTransferRequest);
+  }, [address, chain, inscriptions]);
+
+  useEffect(() => {
+    if (!pendingTransferRequest) return;
+    if (inscriptions.some(item => item.inscriptionId === pendingTransferRequest)) {
+      setSelectedInscriptionId(pendingTransferRequest);
+      setConfirmed(false);
+      setTxid("");
+      setTransferError("");
+      pendingTransferRequest = null;
+    }
+  }, [inscriptions]);
 
   const clearOwnedInscriptions = () => {
     setInscriptions([]);
