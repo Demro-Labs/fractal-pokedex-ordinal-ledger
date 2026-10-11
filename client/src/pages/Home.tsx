@@ -811,7 +811,7 @@ export default function Home() {
                             </div>
                           </button>
                           <a
-                            className="mt-2 flex items-center justify-center gap-1 border border-[#3b434d] py-2 font-mono text-[9px] uppercase tracking-[0.1em] text-[#d9d3c6] hover:border-[#d99a54] hover:text-[#d99a54]"
+                            className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 bg-[#d99a54] px-5 font-mono text-[9px] uppercase tracking-[0.1em] text-[#0b0d10] transition-transform duration-150 hover:-translate-y-0.5 hover:bg-[#c77e3b] active:scale-[0.97]"
                             href={inscriptionUrl(record.id)}
                             target="_blank"
                             rel="noreferrer"
@@ -820,7 +820,7 @@ export default function Home() {
                           </a>
                           <button
                             type="button"
-                            className="mt-2 flex w-full items-center justify-center gap-1 border border-[#d99a54]/70 py-2 font-mono text-[9px] uppercase tracking-[0.1em] text-[#f2bd63] hover:bg-[#d99a54]/10"
+                            className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 border border-[#d99a54] px-5 font-mono text-[9px] uppercase tracking-[0.1em] text-[#f2bd63] transition-colors hover:bg-[#d99a54]/10"
                             onClick={event => {
                               event.stopPropagation();
                               requestUniSatTransfer(record.id);
