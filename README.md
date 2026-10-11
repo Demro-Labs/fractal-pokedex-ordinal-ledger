@@ -1,96 +1,240 @@
 # Fractal Pokédex Ordinal Ledger
 
-Catalogue visuel du **Fractal Pokédex Ordinal Ledger**, avec consultation des inscriptions, métadonnées, galerie, données live UniSat et outils wallet.
+A production-ready visual archive for the **Fractal Pokédex Ordinal Ledger**, a collection of 1,025 Pokédex Ordinals inscribed on Fractal Bitcoin. The site combines a local catalogue with live market information, inscription metadata, UniSat wallet operations, transfer tooling, inscription preparation, and UniScan links.
 
-## Fonctionnalités
+## Production site
 
-- Galerie paginée des inscriptions du Pokédex avec images et métadonnées locales.
-- Recherche et consultation des informations d’une inscription : inscription ID, nom, description, token ID, fichier et traits.
-- Panneau de détail avec propriétaire, créateur et état de listing UniSat lorsque les données live sont disponibles.
-- Chargement automatique des inscriptions détenues après connexion du wallet UniSat.
-- Sélection des inscriptions éligibles au transfert sans exposer les inscriptions ou actifs protocolaires verrouillés.
-- Transfert sécurisé par PSBT avec contrôle de la sortie d’inscription et prévention des sorties dust.
-- Chaque transfert doit être approuvé explicitement dans UniSat ; le site ne signe ni ne diffuse automatiquement de transaction.
-- Upload et inscription UniSat avec création d’ordre, paiement et approbation dans le wallet.
-- Marché live du Pokédex alimenté par le Worker Cloudflare et l’API UniSat.
-- Liens directs vers la collection et les inscriptions sur UniSat.
+- **Live application:** https://demro-labs.github.io/fractal-pokedex-ordinal-ledger/
+- **Repository:** https://github.com/Demro-Labs/fractal-pokedex-ordinal-ledger
+- **Shared live Worker:** https://fractal-ordinal-live.servostar23.workers.dev
 
-## Wallet et transfert
+## Product overview
 
-La connexion se fait via l’extension UniSat. Une fois le wallet connecté, les inscriptions détenues sont chargées automatiquement.
+The application uses two complementary data layers:
 
-Le flux de transfert PSBT utilise l’adresse destinataire fournie par l’utilisateur et ne sélectionne que des inscriptions compatibles. Les UTXO de frais sont récupérés via :
+1. **Local catalogue layer** — Pokédex metadata, inscription identifiers, traits, image assets, and collection presentation are stored with the application and remain available without live API access.
+2. **Live service layer** — market values, ownership details, wallet balances, UTXOs, inscription orders, and transaction information are requested from live services when the relevant feature is used.
+
+This separation provides a reliable catalogue while making the changing, network-dependent parts of the product clearly visible as live data.
+
+## Main features
+
+### Pokédex catalogue
+
+- Browse the complete 1,025-item Pokédex collection.
+- View optimized local Pokédex images and metadata.
+- Search and inspect inscription ID, number, name, description, file, token ID, and traits.
+- Open an inscription detail view with live owner, creator, and listing information when available.
+- Open collection and inscription pages on UniSat or UniScan.
+- Continue browsing local metadata and images when live services are unavailable.
+
+### Live market data
+
+The market panel receives live Pokédex statistics through the shared Cloudflare Worker. Depending on provider availability, the interface can display floor price, volume, market capitalization, listings, and related marketplace information. Live values are external data and are kept separate from the local Pokédex metadata.
+
+### UniSat wallet session
+
+The wallet panel provides explicit session controls:
+
+- **Connect UniSat** requests access to the selected UniSat account.
+- **Disconnect UniSat** clears the active application session and attempts the provider disconnect method when supported by the installed UniSat version.
+- **Clear session** stops an active inscription load, clears the address and network from the interface, resets live dashboard values, and removes loaded wallet inscriptions and transfer state.
+- **Load my inscriptions** manually fetches the inscriptions owned by the connected wallet.
+- **Stop loading** cancels the active loading run and prevents late provider responses from restoring stale results.
+- Connecting does not silently load the wallet’s entire inscription set; loading is user-controlled.
+
+While a supported session is active, the live wallet dashboard can show:
+
+- active network;
+- confirmed and unconfirmed balance;
+- total and available balance;
+- unavailable balance;
+- public key when returned by UniSat;
+- UTXO count and aggregate UTXO value;
+- loaded inscription count and last refresh time;
+- connected address and a direct UniScan address link.
+
+The dashboard refreshes approximately every 15 seconds. A value can be shown as unavailable when the wallet is locked, the provider method is missing, or UniSat temporarily fails to respond.
+
+### Inscription gallery, search, and display modes
+
+The **My inscriptions** panel shows the inscriptions returned by UniSat, ten items per page.
+
+Three display modes are available:
+
+- **Mosaic** — large square previews designed for visual browsing.
+- **Compact** — a denser multi-column layout for scanning many inscriptions.
+- **List** — a one-column detailed layout with wide previews.
+
+The gallery also supports:
+
+- search by inscription ID, inscription number, or location;
+- automatic reset to the first page when the search query changes;
+- match count and total loaded count;
+- **Open result in UniScan**, which opens the first match on the correct Bitcoin or Fractal UniScan inscription route;
+- a live detail link on each card;
+- a transfer action on each eligible card;
+- three distinct gray tones for Previous, page/match status, and Next pagination controls.
+
+### Inscription selection and transfer
+
+The transfer workflow keeps signing and broadcasting under the user’s control:
+
+1. Select a Pokédex inscription from the wallet gallery or detail view.
+2. Enter and validate a recipient address.
+3. Review the live pre-confirmation receipt.
+4. Review the inscription, recipient, network, fee, and UTXO information.
+5. Approve the transaction in UniSat.
+6. Track the returned transaction through the relevant mempool endpoint.
+
+The interface only offers recognized, transferable inscriptions. Inscription outputs and detected protocol assets are excluded from fee-UTXO selection to reduce the risk of spending an asset accidentally. The final UniSat review screen remains authoritative and must be checked before approval.
+
+The secure fee-UTXO route is:
 
 ```text
 GET https://fractal-ordinal-live.servostar23.workers.dev/api/spendable-utxos
 ```
 
-Le Worker vérifie l’adresse, le montant, le script, l’absence d’inscription et l’absence d’actifs protocolaires signalés avant de retourner un UTXO utilisable. Il ne peut pas contourner la politique dust du réseau.
+The Worker validates the request, address, output script, amount, inscription status, protocol-asset status, and other safety conditions. It does not and cannot bypass Fractal Bitcoin dust policy.
 
-> Vérifier soigneusement l’adresse destinataire et le récapitulatif dans UniSat avant toute signature.
+### Upload and inscription preparation
 
-## Upload et inscription
+The inscription panel supports:
 
-Le panneau d’inscription permet de préparer un fichier, créer un ordre UniSat et suivre son statut. La clé API UniSat est conservée côté Worker Cloudflare dans le secret `UNISAT_API_KEY` et n’est jamais exposée au navigateur.
+- selecting or dropping a file;
+- reviewing file name, MIME type, size, and content information;
+- creating an inscription order through the Worker;
+- displaying a live pre-confirmation receipt;
+- opening the required approval flow in UniSat;
+- tracking order and transaction status.
 
-Le paiement, la signature et l’approbation finale sont toujours réalisés par l’utilisateur dans UniSat.
+The site never signs or broadcasts an inscription payment on behalf of the user. Payment and final approval remain inside UniSat.
 
-## Architecture live
-
-Les fonctions live utilisent le Worker Cloudflare partagé :
+## Architecture
 
 ```text
+Browser / React UI
+        |
+        | local Pokédex metadata and images
+        v
+client/public/assets/
+        |
+        | live requests
+        v
+Cloudflare Worker
 https://fractal-ordinal-live.servostar23.workers.dev
+        |
+        +--> UniSat APIs
+        +--> market data providers
+        +--> mempool / transaction endpoints
 ```
 
-Routes principales :
+### Frontend
 
-- `/api/market` — données du marché live du Pokédex ;
-- `/api/live-inscription` — propriétaire, créateur et listing d’une inscription ;
-- `/api/spendable-utxos` — UTXO de frais admissibles au transfert PSBT ;
-- `/api/inscribe/order` — création et suivi des ordres d’inscription.
+- React 19 with TypeScript.
+- Vite for development and production builds.
+- Tailwind CSS 4 for responsive layout and visual styling.
+- `lucide-react` for interface icons.
+- UniSat provider integration in the wallet components.
+- Local Pokédex manifests, metadata, and images under `client/public/assets/`.
 
-Les réponses live peuvent être incomplètes ou temporairement indisponibles. Le frontend utilise des valeurs par défaut sûres afin que les détails locaux de l’inscription restent consultables.
+### Backend and Worker integration
 
-## Développement local
+The application server is bundled from `server/index.ts`. Protected and live operations are routed through the Cloudflare Worker so provider secrets are not exposed in the browser.
+
+Important Worker routes include:
+
+- `/api/market` — live Pokédex market statistics;
+- `/api/live-inscription` — live owner, creator, and listing information;
+- `/api/spendable-utxos` — admissible fee UTXOs for transfers;
+- `/api/inscribe/order` — inscription order creation and status;
+- transaction and mempool-related routes used by receipts and confirmation tracking.
+
+The Worker stores the UniSat API key in the server-side secret `UNISAT_API_KEY`. It must never be included in frontend source, static assets, or a public build artifact.
+
+## Data and assets
+
+Local collection content is stored under:
+
+```text
+client/public/assets/
+```
+
+The asset tree contains Pokédex manifests, metadata, optimized images, and brand assets. Local data is the fallback source for catalogue browsing; live endpoints are used for ownership, market, wallet, order, and transaction information that can change over time.
+
+Live responses can be partial, delayed, rate-limited, or temporarily unavailable. The UI should preserve local Pokédex content and display an explicit unavailable state rather than treating missing live values as authoritative.
+
+## Local development
+
+Requirements:
+
+- Node.js compatible with the repository toolchain;
+- pnpm 11;
+- a browser with the UniSat Wallet extension for wallet testing.
+
+Install dependencies and start the Vite development server:
 
 ```bash
 pnpm install
 pnpm run dev
 ```
 
-Validation TypeScript et build de production :
+Run the TypeScript validation:
 
 ```bash
 pnpm run check
+```
+
+Create the production frontend and server bundle:
+
+```bash
 pnpm run build
 ```
 
-Le projet utilise React 19, Vite, Tailwind CSS 4 et TypeScript. Pour lancer le serveur produit après compilation :
+Run the compiled server:
 
 ```bash
 pnpm run start
 ```
 
-## Déploiement
+Useful additional command:
 
-Le site est publié automatiquement sur GitHub Pages depuis `main` par le workflow du dépôt.
-
-URL de production :
-
-```text
-https://demro-labs.github.io/fractal-pokedex-ordinal-ledger/
+```bash
+pnpm run preview
 ```
 
-Vite utilise automatiquement la base `/fractal-pokedex-ordinal-ledger/` lors du build GitHub Pages.
+## Deployment
 
-## Données et assets
+The site is deployed automatically to GitHub Pages from `main` by the workflow in `.github/workflows/`.
 
-Les métadonnées, le manifeste de collection, les images optimisées et les assets de marque sont stockés dans `client/public/assets/`. La consultation locale ne dépend pas du marché live.
+The production base path is:
 
-## Sécurité et limites
+```text
+/fractal-pokedex-ordinal-ledger/
+```
 
-- La clé UniSat reste côté Worker et n’est jamais incluse dans le bundle frontend.
-- UniSat demande l’approbation de l’utilisateur pour les signatures, paiements et inscriptions.
-- Le flux PSBT ne contourne pas la politique dust de Fractal Bitcoin.
-- Les informations de marché, de propriétaire et d’inscription dépendent de l’API UniSat.
+Vite uses that base path so local images, manifests, and client-side links work correctly under the GitHub Pages subdirectory.
+
+Recommended release validation:
+
+```bash
+pnpm run check
+pnpm run build
+git diff --check
+```
+
+Pull requests are expected to pass the repository security, dependency, and CodeQL checks before merge.
+
+## Security and user-control principles
+
+- Connecting or browsing local metadata does not require a wallet signature.
+- Every transfer and inscription payment requires explicit user approval in UniSat.
+- The Worker’s UniSat API secret is never sent to the frontend.
+- Clear session removes wallet data from application state; it does not revoke permissions granted inside UniSat when the provider exposes no disconnect API.
+- Transfer preparation excludes detected inscription and protocol-asset UTXOs from fee selection.
+- The application does not circumvent dust rules, provider policies, network consensus, or UniSat approval screens.
+- Always verify the recipient address, network, output, fee, and final UniSat review screen before approving a transaction.
+
+## License
+
+This repository is released under the MIT license specified in `package.json`.
