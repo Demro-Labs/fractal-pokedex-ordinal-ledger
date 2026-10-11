@@ -30,6 +30,14 @@ import {
 import { cacheCollectionResponse, readCachedCollection } from "@/lib/collection-cache";
 import { requestUniSatTransfer } from "@/components/UniSatWalletConnect";
 
+const BUILD_META = import.meta.env as ImportMetaEnv & {
+  readonly VITE_GITHUB_SHA?: string;
+  readonly VITE_GITHUB_COMMIT_DATE?: string;
+};
+const GITHUB_BUILD_SHA = BUILD_META.VITE_GITHUB_SHA ?? "";
+const GITHUB_BUILD_DATE = BUILD_META.VITE_GITHUB_COMMIT_DATE ?? "";
+const GITHUB_REPOSITORY_URL = "https://github.com/Demro-Labs/fractal-pokedex-ordinal-ledger";
+
 const PER_PAGE = 20;
 const TOTAL_ITEMS = 1025;
 const HERO_URL = SHEET_URLS[0];
@@ -1042,6 +1050,19 @@ export default function Home() {
                   Copyright © 2026 Fractal Pokédex Ordinals. All rights reserved.
                 </p>
                 <p>Powered by Fractal Ordinals / UniSat / Fractal Bitcoin</p>
+                <p>
+                  Version GitHub: {" "}
+                  <a
+                    href={GITHUB_BUILD_SHA ? `${GITHUB_REPOSITORY_URL}/commit/${GITHUB_BUILD_SHA}` : GITHUB_REPOSITORY_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    title={GITHUB_BUILD_SHA ? `Voir le commit ${GITHUB_BUILD_SHA}` : "Dépôt GitHub"}
+                    className="text-[#d9d3c6] underline decoration-[#d99a54] underline-offset-2"
+                  >
+                    #{GITHUB_BUILD_SHA ? GITHUB_BUILD_SHA.slice(0, 7) : "dev"}
+                  </a>
+                  {GITHUB_BUILD_DATE && <> · <time dateTime={GITHUB_BUILD_DATE}>{GITHUB_BUILD_DATE}</time></>}
+                </p>
               </div>
             </div>
           </footer>
