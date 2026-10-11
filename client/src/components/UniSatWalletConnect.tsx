@@ -299,6 +299,7 @@ export function UniSatWalletConnect() {
   const [inscriptionTotal, setInscriptionTotal] = useState(0);
   const [inscriptionCursor, setInscriptionCursor] = useState(0);
   const [selectedInscriptionId, setSelectedInscriptionId] = useState("");
+  const [walletInscriptionsPage, setWalletInscriptionsPage] = useState(0);
   const [destination, setDestination] = useState("");
   const [confirmed, setConfirmed] = useState(false);
   const [transferBusy, setTransferBusy] = useState(false);
@@ -408,6 +409,7 @@ export function UniSatWalletConnect() {
     setInscriptionTotal(0);
     setInscriptionCursor(0);
     setSelectedInscriptionId("");
+    setWalletInscriptionsPage(0);
     setConfirmed(false);
     setTxid("");
   };
@@ -786,6 +788,9 @@ export function UniSatWalletConnect() {
   const connectedToFractal = Boolean(address && isSupportedMainnet(chain?.enum));
   const currentNetwork = getMempoolConfig(chain?.enum);
   const selectedInscription = inscriptions.find(item => item.inscriptionId === selectedInscriptionId);
+  const walletPageSize = 10;
+  const walletPageCount = Math.max(1, Math.ceil(inscriptions.length / walletPageSize));
+  const walletPageItems = inscriptions.slice(walletInscriptionsPage * walletPageSize, walletInscriptionsPage * walletPageSize + walletPageSize);
   const uniScanUrl = chain?.enum === FRACTAL_MAINNET
     ? `https://uniscan.cc/fractal/address/${encodeURIComponent(address ?? "")}`
     : `https://uniscan.cc/bitcoin/address/${encodeURIComponent(address ?? "")}`;
@@ -882,7 +887,22 @@ export function UniSatWalletConnect() {
         </section>
       )}
       {connectedToFractal && inscriptions.length > 0 && (
-        <section className="border-t border-[#2c323a] pt-4" aria-labelledby="ordinal-transfer-title">
+        <section className="border-t border-[#2c323a] pt-4" aria-labelledby="wallet-inscriptions-title">
+          <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="font-mono text-[9px] uppercase tracking-[0.18em] text-[#d99a54]">Live wallet collection</p><h2 id="wallet-inscriptions-title" className="mt-1 font-display text-xl text-[#f3efe5]">My inscriptions</h2><p className="mt-1 font-mono text-[10px] text-[#7f8b99]">Live data from the connected UniSat wallet · 10 per page</p></div><span className="font-mono text-[10px] text-[#718092]">Page {walletInscriptionsPage + 1} / {walletPageCount}</span></div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">{walletPageItems.map(item => {
+            const isSelected = sameInscriptionId(item.inscriptionId, selectedInscriptionId);
+            const preview = item.preview || item.content;
+            return <article key={item.inscriptionId} className={`min-w-0 border bg-[#10151a] p-3 ${isSelected ? "border-[#d99a54]" : "border-[#2c323a]"}`}>
+              <div className="aspect-square overflow-hidden border border-[#2c323a] bg-[#14191f]">{preview ? <img src={preview} alt={`Preview ${item.inscriptionId}`} className="h-full w-full object-cover" loading="lazy" /> : <div className="flex h-full items-center justify-center px-3 text-center font-mono text-[9px] uppercase text-[#718092]">Live preview unavailable</div>}</div>
+              <p className="mt-3 truncate font-mono text-[10px] text-[#f2bd63]">{item.inscriptionNumber != null ? `#${item.inscriptionNumber}` : "Inscription"}</p><p className="mt-1 break-all font-mono text-[9px] leading-4 text-[#d9d3c6]">{item.inscriptionId}</p><p className="mt-1 break-all font-mono text-[9px] leading-4 text-[#718092]">{item.location ?? "Location unavailable"}</p>
+              <div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => { setSelectedInscriptionId(item.inscriptionId); setDestination(""); setConfirmed(false); setTxid(""); setTransferError("Enter a receiving address to generate the pre-confirmation receipt."); window.setTimeout(() => document.getElementById("wallet-transfer-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }} disabled={busy || transferBusy} className={`flex-1 border px-2 py-2 font-mono text-[9px] uppercase tracking-[0.08em] disabled:opacity-40 ${isSelected ? "border-[#d99a54] bg-[#d99a54] text-[#0b0d10]" : "border-[#d99a54] text-[#f2bd63] hover:bg-[#d99a54]/10"}`}>Transfer</button><a href={`https://fractal.unisat.io/inscription/${encodeURIComponent(item.inscriptionId)}`} target="_blank" rel="noreferrer" className="border border-[#3b434d] px-2 py-2 font-mono text-[9px] uppercase text-[#9ea7b3] hover:border-[#d99a54]">Live details</a></div>
+            </article>;
+          })}</div>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-3"><button type="button" onClick={() => setWalletInscriptionsPage(page => Math.max(0, page - 1))} disabled={walletInscriptionsPage === 0} className="border border-[#3b434d] px-3 py-2 font-mono text-[9px] uppercase text-[#9ea7b3] disabled:opacity-30">Previous</button><span className="font-mono text-[10px] text-[#718092]">{walletPageItems.length} shown · {inscriptions.length} total loaded</span><button type="button" onClick={() => setWalletInscriptionsPage(page => Math.min(walletPageCount - 1, page + 1))} disabled={walletInscriptionsPage >= walletPageCount - 1} className="border border-[#3b434d] px-3 py-2 font-mono text-[9px] uppercase text-[#9ea7b3] disabled:opacity-30">Next</button></div>
+        </section>
+      )}
+      {connectedToFractal && inscriptions.length > 0 && (
+        <section id="wallet-transfer-form" className="border-t border-[#2c323a] pt-4" aria-labelledby="ordinal-transfer-title">
           <h3 id="ordinal-transfer-title" className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#d9d3c6]">
             On-chain Ordinal transfer · peer to peer
           </h3>
