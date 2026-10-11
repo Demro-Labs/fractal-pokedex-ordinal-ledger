@@ -167,6 +167,7 @@ function shortAddress(address: string) {
   return `${address.slice(0, 8)}…${address.slice(-6)}`;
 }
 const FRACTAL_INSCRIPTION_BASE = "https://fractal.unisat.io";
+const FRACTAL_STATIC_BASE = "https://fractal-static.unisat.space";
 function absoluteInscriptionUrl(value: string | undefined) {
   if (!value) return "";
   if (value.startsWith("data:") || value.startsWith("blob:") || /^https?:\/\//i.test(value)) return value;
@@ -176,11 +177,9 @@ function absoluteInscriptionUrl(value: string | undefined) {
 function inscriptionImageCandidates(item: UniSatInscription, localImage?: string) {
   const candidates = [
     localImage ?? "",
-    item.contentType?.toLowerCase().startsWith("image/") ? `${FRACTAL_INSCRIPTION_BASE}/content/${item.inscriptionId}` : "",
-    `${FRACTAL_INSCRIPTION_BASE}/preview/${item.inscriptionId}`,
+    `${FRACTAL_STATIC_BASE}/content/${item.inscriptionId}`,
     absoluteInscriptionUrl(item.preview),
     absoluteInscriptionUrl(item.content),
-    item.contentType?.toLowerCase().startsWith("image/") ? `${FRACTAL_INSCRIPTION_BASE}/content/${item.inscriptionId}` : "",
   ];
   return candidates.filter((value, index) => value && candidates.indexOf(value) === index);
 }
