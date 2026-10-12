@@ -43,7 +43,7 @@ export function describeFeeSources(strategy: FeeEstimate["strategy"], sources: F
   return sources.mempool.available ? "Mempool seul (UniSat indisponible)" : "UniSat seul (Mempool indisponible)";
 }
 
-/** Server-side consensus: compare live Mempool and UniSat estimates without exposing the UniSat API key. */
+/** Server-side consensus: compare the live Mempool and UniSat estimates without exposing the UniSat API key. */
 export async function getRecommendedFeeEstimate(network: string): Promise<FeeEstimate> {
   const config = getMempoolConfig(network);
   if (!config) throw new Error("Sélectionnez Bitcoin mainnet ou Fractal Bitcoin mainnet dans UniSat.");
@@ -60,7 +60,7 @@ export async function getRecommendedFeeRate(network: string) {
   return Math.ceil(estimate.feeRate);
 }
 
-export type SpendableUtxo = { address: string; txid: string; vout: number; satoshi: number; scriptPk: string };
+export type SpendableUtxo = { address: string; txid: string; vout: number; satoshi: number; scriptPk: string; inscriptionsRunesAlkanesChecked: true; isLowFee: false; isOpInRBF: false; inscriptions: [] };
 
 /** Fetch only confirmed, non-asset UTXOs verified by the server-side UniSat indexer. */
 export async function getSpendableUtxos(network: string, address: string, minimumSats: number): Promise<SpendableUtxo[]> {
@@ -72,7 +72,7 @@ export async function getSpendableUtxos(network: string, address: string, minimu
   const collected: SpendableUtxo[] = [];
   let cursor: number = 0;
   for (let pageNumber = 0; pageNumber < 10; pageNumber += 1) {
-    const query: URLSearchParams = new URLSearchParams({ chain, address, cursor: String(cursor), size: "50" });
+    const query: URLSearchParams = new URLSearchParams({ chain, address, cursor: String(cursor), size: "25" });
     type SpendableUtxoPage = {
       chain?: string; address?: string; nextCursor?: number; total?: number; scannedCount?: number;
       utxo?: Array<Record<string, unknown>>;
@@ -87,7 +87,7 @@ export async function getSpendableUtxos(network: string, address: string, minimu
       typeof item.vout === "number" && Number.isSafeInteger(item.vout) && item.vout >= 0 &&
       typeof item.satoshi === "number" && Number.isSafeInteger(item.satoshi) && item.satoshi >= 600 &&
       typeof item.scriptPk === "string" && /^(?:[a-f0-9]{2})+$/i.test(item.scriptPk) &&
-      item.protocolAssetsChecked === true && item.isLowFee !== true && item.isOpInRBF !== true &&
+      item.inscriptionsRunesAlkanesChecked === true && item.isLowFee === false && item.isOpInRBF === false &&
       Array.isArray(item.inscriptions) && item.inscriptions.length === 0
     );
     collected.push(...safe);
