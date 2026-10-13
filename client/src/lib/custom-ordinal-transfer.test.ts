@@ -88,7 +88,7 @@ function setupMocks(options: { utxoOverrides?: Record<string, unknown> } = {}) {
             scriptPk: SCRIPT_HEX,
             height: 100,
             isLowFee: false,
-            isOpInRBF: false,
+            isOpInRBF: true,
             inscriptions: [],
             inscriptionsRunesAlkanesChecked: true,
             ...(options.utxoOverrides ?? {}),
