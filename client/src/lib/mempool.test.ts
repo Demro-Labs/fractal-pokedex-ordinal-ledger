@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { LIVE_DATA_API_BASE } from "@/lib/live";
-import { getSpendableUtxos } from "./mempool";
+import { getSpendableUtxos, InsufficientSafeUtxosError } from "./mempool";
 
 const ADDRESS = "bc1qtestaddress0000000000000000000000000";
 const SAFE_UTXO = {
@@ -72,7 +72,8 @@ describe("getSpendableUtxos", () => {
       });
     }) as typeof fetch);
 
-    await expect(getSpendableUtxos("FRACTAL_BITCOIN_MAINNET", ADDRESS, 143_744))
-      .rejects.toThrow(/0 sats.*0 UTXO sûrs.*500\/500.*Aucun paiement n’a été lancé/);
+    const error = await getSpendableUtxos("FRACTAL_BITCOIN_MAINNET", ADDRESS, 143_744).catch(value => value);
+    expect(error).toBeInstanceOf(InsufficientSafeUtxosError);
+    expect(error).toHaveProperty("message", expect.stringMatching(/0 sats.*0 UTXO sûrs.*500\/500.*Aucun paiement n’a été lancé/));
   });
 });
