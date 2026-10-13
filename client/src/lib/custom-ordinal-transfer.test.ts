@@ -87,7 +87,7 @@ function setupMocks(options: { utxoOverrides?: Record<string, unknown> } = {}) {
             satoshi: 100_000,
             scriptPk: SCRIPT_HEX,
             height: 100,
-            isLowFee: false,
+            isLowFee: true,
             isOpInRBF: true,
             inscriptions: [],
             inscriptionsRunesAlkanesChecked: true,
@@ -248,7 +248,7 @@ describe("Fractal mobile PSBT workflow", () => {
       selectedInscription: fixture.inscription,
       ownedInscriptions: [fixture.inscription],
       feeRateSatVb: 2,
-    })).rejects.toThrow(/unconfirmed, low-fee, asset-bearing, or malformed/i);
+    })).rejects.toThrow(/unconfirmed, asset-bearing, or malformed output, or omitted a required safety flag/i);
 
     expect(signPsbtCalled).toBe(false);
     expect(fixture.broadcastCount()).toBe(0);

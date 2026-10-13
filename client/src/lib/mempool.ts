@@ -68,7 +68,7 @@ export async function getRecommendedFeeRate(network: string) {
   return Math.ceil(estimate.feeRate);
 }
 
-export type SpendableUtxo = { address: string; txid: string; vout: number; satoshi: number; scriptPk: string; height: number; inscriptionsRunesAlkanesChecked: true; isLowFee: false; isOpInRBF: boolean; inscriptions: [] };
+export type SpendableUtxo = { address: string; txid: string; vout: number; satoshi: number; scriptPk: string; height: number; inscriptionsRunesAlkanesChecked: true; isLowFee: boolean; isOpInRBF: boolean; inscriptions: [] };
 
 const SPENDABLE_UTXO_PAGE_SIZE = 25;
 // Bounded to 500 outputs per attempt; the Worker keeps its existing per-IP rate limit.
@@ -111,7 +111,7 @@ export async function getSpendableUtxos(network: string, address: string, minimu
       typeof item.satoshi === "number" && Number.isSafeInteger(item.satoshi) && item.satoshi >= 600 &&
       typeof item.scriptPk === "string" && /^(?:[a-f0-9]{2})+$/i.test(item.scriptPk) &&
       typeof item.height === "number" && Number.isSafeInteger(item.height) && item.height > 0 &&
-      item.inscriptionsRunesAlkanesChecked === true && item.isLowFee === false && typeof item.isOpInRBF === "boolean" &&
+      item.inscriptionsRunesAlkanesChecked === true && typeof item.isLowFee === "boolean" && typeof item.isOpInRBF === "boolean" &&
       Array.isArray(item.inscriptions) && item.inscriptions.length === 0
     );
     collected.push(...safe);
