@@ -864,7 +864,7 @@ export function UniSatWalletConnect() {
             getChain: psbtProvider.getChain.bind(provider),
             signPsbt: psbtProvider.signPsbt.bind(provider),
           },
-          mempool: { api: mempool.api, label: mempool.label, chain: "fractal" },
+          mempool: { api: mempool.api, label: mempool.label, chain: activeNetworkEnum === BITCOIN_MAINNET ? "bitcoin" : "fractal" },
           expectedNetworkEnum: activeNetworkEnum,
           currentAddress: address,
           recipientAddress: recipient,
