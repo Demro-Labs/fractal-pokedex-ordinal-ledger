@@ -209,14 +209,21 @@ The site is deployed automatically to GitHub Pages from `main` by the workflow i
 
 The Cloudflare Worker is intentionally shared with Ordinal Punks. Its source of truth and deployment workflow live in `Demro-Labs/ordinal-punks-collection`; this repository must not add a second Worker with the same name or deploy an incomplete copy over the shared service. The Pokedex frontend already uses the shared Worker URL above, and the Worker allowlist includes the Pokedex collection and origin.
 
+The latest Punks production updates are therefore already active for Pokedex through that shared service: Buffer initialization before BIP-322, a local `workerd` smoke test, Smart Placement, privacy-conscious sampled logs, and post-deployment checks for both collections and auth origins. The corrected Cloudflare Production run is [#38456102630](https://github.com/Demro-Labs/ordinal-punks-collection/actions/runs/38456102630). Operational recovery steps are in the [shared Worker Production runbook](https://github.com/Demro-Labs/ordinal-punks-collection/blob/main/workers/PRODUCTION-RUNBOOK.md).
+
 Before releasing a Pokedex frontend change, the shared live contract can be checked without wallet credentials:
 
 ```bash
-curl -fsS "https://fractal-ordinal-live.servostar23.workers.dev/api/market?collectionId=pokedex&start=0&limit=1"
-curl -i "https://fractal-ordinal-live.servostar23.workers.dev/api/fractal/balance?address=invalid"
+base=https://fractal-ordinal-live.servostar23.workers.dev
+origin=https://demro-labs.github.io
+curl -fsS "$base/api/market?collectionId=pokedex&start=0&limit=1" -H "Origin: $origin"
+curl -i "$base/api/fractal/balance?address=invalid" -H "Origin: $origin"
+# Safe Inscribe route probe: rejected before order creation; expected HTTP 415.
+curl -sS -o /dev/null -w '%{http_code}\n' -X POST "$base/api/inscribe/order" \
+  -H "Origin: $origin" -H 'Content-Type: text/plain' --data-binary 'pokedex-health-probe'
 ```
 
-The first request must return Pokedex market JSON; the second must return HTTP `400` without exposing any server secret. Worker changes are validated and deployed from the Punks repository before they are consumed here. The production workflow then verifies the `opunk` and `pokedex` market routes, anonymous auth sessions for both `site` values, the allowlisted CORS preflights, the `AUTH_STORAGE` Durable Object binding, and only the name/type of the `UNISAT_API_KEY` secret binding. It never reads or prints the secret value.
+The first request must return Pokedex market JSON; the second must return HTTP `400` without exposing any server secret; the final probe must return `415` without creating an order. Worker changes are validated and deployed from the Punks repository before they are consumed here. The production workflow then verifies the `opunk` and `pokedex` market routes, anonymous auth sessions for both `site` values, the allowlisted CORS preflights, the `AUTH_STORAGE` Durable Object binding, and only the name/type of the `UNISAT_API_KEY` secret binding. It never reads or prints the secret value. A `403` from a browser-origin-protected route when the `Origin` header is omitted is expected; production probes should use the allowlisted origin as shown above.
 
 The production base path is:
 
