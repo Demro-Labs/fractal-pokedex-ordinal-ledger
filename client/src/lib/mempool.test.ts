@@ -10,7 +10,7 @@ const SAFE_UTXO = {
   satoshi: 488_045,
   scriptPk: `0014${"11".repeat(20)}`,
   height: 100,
-  isLowFee: false,
+  isLowFee: true,
   isOpInRBF: true,
   inscriptions: [],
   inscriptionsRunesAlkanesChecked: true,
@@ -26,7 +26,7 @@ function installBrowserTimerMocks() {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("getSpendableUtxos", () => {
-  it("finds a confirmed RBF-marked output through the bounded 500-output scan", async () => {
+  it("finds a confirmed low-fee RBF-marked output through the bounded 500-output scan", async () => {
     installBrowserTimerMocks();
     const cursors: number[] = [];
     vi.stubGlobal("fetch", (async (input: RequestInfo | URL) => {
@@ -53,6 +53,7 @@ describe("getSpendableUtxos", () => {
     expect(cursors.at(-1)).toBe(475);
     expect(result).toEqual([SAFE_UTXO]);
     expect(result[0].isOpInRBF).toBe(true);
+    expect(result[0].isLowFee).toBe(true);
     expect(result[0].height).toBeGreaterThan(0);
   });
 
