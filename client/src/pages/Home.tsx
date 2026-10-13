@@ -11,6 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { RarityBadge, LiveDataBlock } from "@/components/CollectionSignals";
+import { SiteOverviewPanel } from "@/components/SiteOverviewPanel";
 const MarketPanel = lazy(() => import("@/components/MarketPanel").then(module => ({ default: module.MarketPanel })));
 import { createRarityIndex } from "@/lib/rarity";
 import { fetchLiveInscription, type LiveInscription } from "@/lib/live";
@@ -529,6 +530,48 @@ export default function Home() {
           </div>
         </div>
       </header>
+      <SiteOverviewPanel
+        id="fractal-pokedex-overview"
+        eyebrow="Guide de la collection"
+        title="Fractal Pokédex — 1 025 Ordinals à explorer"
+        summary="Un index visuel des Pokédex Ordinals inscrits sur Fractal Bitcoin : recherchez un Pokémon, consultez ses attributs et retrouvez les données de marché, d’inscription et de portefeuille."
+        sections={[
+          {
+            title: "Un Pokédex inscrit sur Fractal Bitcoin",
+            text: "Le catalogue réunit 1 025 Pokédex Ordinals avec leurs illustrations et métadonnées. Les contenus locaux restent consultables même si un fournisseur de données en direct est indisponible.",
+            bullets: [
+              "Chaque fiche relie le nom, le numéro, les attributs et l’identifiant original de l’inscription.",
+              "Les détails en direct peuvent ajouter le propriétaire, le créateur et le statut de listing lorsqu’ils sont accessibles.",
+            ],
+          },
+          {
+            title: "Recherche et navigation",
+            text: "Trouvez une entrée, comparez ses attributs et parcourez la collection sans quitter le catalogue.",
+            bullets: [
+              "Recherche par nom, numéro, identifiant et caractéristiques.",
+              "Filtres par type, capacité, rareté et mise en vente; favoris et pagination.",
+              "Illustrations locales optimisées et liens source UniSat / UniScan.",
+            ],
+          },
+          {
+            title: "Marché et outils UniSat",
+            text: "Le site sépare les données stables du Pokédex des informations susceptibles de changer sur le réseau ou le marché.",
+            bullets: [
+              "Statistiques et listings récupérés en direct par le Worker Cloudflare partagé avec Ordinal Punks.",
+              "Connexion au portefeuille, chargement manuel des inscriptions, consultation des soldes et UTXO.",
+              "Préparation de transferts et d’ordres d’inscription de fichier; l’approbation finale s’ouvre dans UniSat.",
+            ],
+          },
+          {
+            title: "Preuve de propriété et sécurité",
+            text: "Sur mobile UniSat, une signature BIP-322 fraîche prouve le contrôle de l’adresse avant chaque transfert ou paiement d’inscription de fichier. La séquence Inscribe est reçu examiné → confirmer le paiement → signer la preuve de propriété → ouvrir séparément l’approbation de transaction UniSat.",
+            bullets: [
+              "La preuve BIP-322 ne crée pas de session et ne permet pas, à elle seule, de déplacer des fonds.",
+              "La clé privée ne quitte pas UniSat; le parcours desktop reste inchangé.",
+            ],
+          },
+        ]}
+      />
       <div
         id="top"
         className="mx-auto grid max-w-[1440px] lg:grid-cols-[220px_minmax(0,1fr)]"
