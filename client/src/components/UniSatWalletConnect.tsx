@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ExternalLink, RefreshCw, Wallet } from "lucide-react";
 import { fetchLiveInscription, type LiveInscription } from "@/lib/live";
 import { describeFeeSources, getRecommendedFeeEstimate } from "@/lib/mempool";
-import { ensureNativeInscriptionFeeBalance, sendNativeUniSatInscription } from "@/lib/native-unisat-actions";
+import { sendNativeUniSatInscription } from "@/lib/native-unisat-actions";
 import type { OrdinalTransferPlan } from "@/lib/ordinal-transfer-psbt";
 import { getUniSatInscriptionUrl, isTransferOutcomeUnclear } from "@/lib/transfer-safety";
 import { shouldShowDustRelayGuidance } from "@/lib/wallet-error";
@@ -236,13 +236,13 @@ function describeWalletError(cause: unknown, fallback: string) {
   }
   if (message.startsWith("UNISAT_PSBT_SIGN_FAILED:")) {
     const detail = message.slice("UNISAT_PSBT_SIGN_FAILED:".length).trim();
-    return `UniSat Mobile failed during signPsbt: ${detail}. The site did not submit a transaction to Fractal Mempool. Check UniSat activity before retrying; if no transfer appears, update UniSat Wallet and try again from the in-app browser.`;
+    return `UniSat Mobile failed during signPsbt: ${detail}. The site did not submit a transaction to the selected network Mempool. Check UniSat activity before retrying; if no transfer appears, update UniSat Wallet and try again from the in-app browser.`;
   }
   if (/toAddress/i.test(message) && /undefined/i.test(message)) {
     return `${message}${code}. UniSat Mobile returned an incomplete native transfer response. Do not retry until you check UniSat activity and the selected network's Mempool for a possible broadcast. Update UniSat Wallet and review the destination and final approval screen.`;
   }
   if (shouldShowDustRelayGuidance(message)) {
-    return `${message}${code}. The network relay policy rejected a transaction that contains a dust output while paying a non-zero fee. With the native mobile flow, UniSat constructs the outputs and shows the final transaction for review; the app validates the recipient address and then checks Mempool after broadcast. Adding BTC/FB helps only if it removes a dust change output. A Mempool or Cloudflare API key cannot override relay policy.`;
+    return `${message}${code}. The network relay policy rejected a transaction that contains a dust output while paying a non-zero fee. The mobile PSBT flow constructs and reviews exact outputs before UniSat signs; the app then verifies the signed transaction and checks Mempool after broadcast. Adding BTC/FB helps only if it removes a dust change output. A Mempool or Cloudflare API key cannot override relay policy.`;
   }
   return message ? `${message}${code}` : fallback;
 }
@@ -797,10 +797,10 @@ export function UniSatWalletConnect() {
       setTransferError("Select an inscription loaded from your connected UniSat wallet.");
       return;
     }
-    const useFractalMobilePsbt = isMobileBrowser() && chain?.enum === FRACTAL_MAINNET;
-    if (useFractalMobilePsbt) {
+    const useMobilePsbt = isMobileBrowser() && isSupportedMainnet(chain?.enum);
+    if (useMobilePsbt) {
       if (!provider.getBitcoinUtxos || !provider.getPublicKey || !provider.getAccounts || !provider.signPsbt) {
-        setTransferError("This UniSat Mobile version does not expose the verified PSBT signing methods required for Fractal. Update UniSat; no transfer was signed or broadcast.");
+        setTransferError("This UniSat Mobile version does not expose the verified PSBT signing methods required for this network. Update UniSat; no transfer was signed or broadcast.");
         return;
       }
     } else if (!provider.sendInscription) {
@@ -842,9 +842,9 @@ export function UniSatWalletConnect() {
       setFeeSourceLabel(currentFeeSourceLabel);
       setMempoolFeeRate(feeRate);
       let returnedTxid: string | undefined;
-      if (useFractalMobilePsbt) {
+      if (useMobilePsbt) {
         const mempool = getMempoolConfig(activeNetworkEnum);
-        if (!mempool) throw new Error("Fractal Mempool is not configured; no transaction was signed or broadcast.");
+        if (!mempool) throw new Error("The selected network Mempool is not configured; no transaction was signed or broadcast.");
         const psbtProvider = provider as Required<Pick<UniSatProvider, "getChain" | "getAccounts" | "getPublicKey" | "getBitcoinUtxos" | "signPsbt">>;
         const { sendOrdinalInscriptionWithCustomPsbt } = await import("@/lib/custom-ordinal-transfer");
         const requestSignature = psbtProvider.signPsbt.bind(provider);
@@ -891,8 +891,7 @@ export function UniSatWalletConnect() {
         });
         returnedTxid = result.txid;
       } else {
-        // Keep the existing desktop path unchanged; Bitcoin mobile retains its native path.
-        if (isMobileBrowser()) await ensureNativeInscriptionFeeBalance(provider, activeNetworkEnum, selected, feeRate);
+        // Keep the existing desktop native path unchanged. All supported mobile networks use the verified PSBT flow above.
         returnedTxid = await sendNativeUniSatInscription(provider, recipient, selected.inscriptionId, feeRate);
       }
       if (!returnedTxid || !/^[a-f0-9]{64}$/i.test(returnedTxid)) {
@@ -927,7 +926,7 @@ export function UniSatWalletConnect() {
 
   const connectedToFractal = Boolean(address && isSupportedMainnet(chain?.enum));
   const currentNetwork = getMempoolConfig(chain?.enum);
-  const mobileFractalTransferOnFractal = isMobileBrowser() && chain?.enum === FRACTAL_MAINNET;
+  const mobileVerifiedTransfer = isMobileBrowser() && isSupportedMainnet(chain?.enum);
   const selectedInscription = inscriptions.find(item => item.inscriptionId === selectedInscriptionId);
 
   useEffect(() => {
@@ -995,7 +994,7 @@ export function UniSatWalletConnect() {
               <p><span className="text-[#718092]">Fee rate:</span> {psbtReview.feeSourceLabel}: {psbtReview.plan.feeRateSatVb} sat/vB · estimated {psbtReview.plan.estimatedVsize} vB</p>
               <p><span className="text-[#718092]">RBF:</span> opt-in signaled; this site has no replacement or fee-bump control.</p>
             </div>
-            <p className="mt-3 font-mono text-[10px] leading-5 text-[#e0b45f]">The Cloudflare Worker supplies protocol-checked fee UTXOs. UniSat signs only after your approval; the signed transaction is verified locally, then submitted to Fractal Mempool for validation and broadcast. Do not approve if any detail differs.</p>
+            <p className="mt-3 font-mono text-[10px] leading-5 text-[#e0b45f]">The Cloudflare Worker supplies protocol-checked fee UTXOs. UniSat signs only after your approval; the signed transaction is verified locally, then submitted to the selected network Mempool for validation and broadcast. Do not approve if any detail differs.</p>
             <div className="mt-4 flex flex-wrap justify-end gap-2">
               <button type="button" disabled={psbtSigning} onClick={() => resolvePsbtReview(false)} className="border border-[#3b434d] px-4 py-3 font-mono text-[10px] uppercase tracking-[0.1em] text-[#d9d3c6] hover:border-[#a45e54] disabled:opacity-50">Cancel — do not sign</button>
               <button type="button" disabled={psbtSigning} onClick={approvePsbtReview} className="border border-[#d99a54] bg-[#d99a54] px-4 py-3 font-mono text-[10px] uppercase tracking-[0.1em] text-[#0b0d10] disabled:opacity-50">{psbtSigning ? "Waiting for UniSat…" : "Approve in UniSat"}</button>
@@ -1090,10 +1089,10 @@ export function UniSatWalletConnect() {
         </div>
       </div>
 
-      {connectedToFractal && mobileFractalTransferOnFractal && (
+      {connectedToFractal && mobileVerifiedTransfer && (
         <div className="border-y border-[#d99a54]/50 bg-[#d99a54]/5 p-3 font-mono text-[10px] leading-5 text-[#e0b45f]" role="note">
-          <p className="uppercase tracking-[0.12em]">Fractal mobile uses UniSat’s native inscription transfer</p>
-          <p className="mt-1">UniSat constructs, reviews, signs and broadcasts the transfer. Mempool validates the recipient address before the wallet opens, then tracks the returned transaction ID. Review the final amount and fee in UniSat.</p>
+          <p className="uppercase tracking-[0.12em]">Mobile uses the verified UniSat PSBT transfer</p>
+          <p className="mt-1">The site validates the recipient, asset-safe fee UTXOs, exact outputs and fees before opening UniSat. UniSat reviews and signs the PSBT; Mempool validates the signed transaction, broadcasts it and tracks the returned TXID.</p>
         </div>
       )}
       {transferOutcomeUnclear && (
@@ -1189,7 +1188,7 @@ export function UniSatWalletConnect() {
             <div className="mt-3 border border-[#3b434d] bg-[#10151a] p-3 font-mono text-[10px] leading-5 text-[#9ea7b3]">
               <p><span className="text-[#718092]">Asset:</span> {selectedInscription.inscriptionId}</p>
               <p className="break-all"><span className="text-[#718092]">Recipient:</span> {destination.trim()}</p>
-              <div className="mt-3 border border-[#d99a54]/60 bg-[#10151a] p-3 font-mono text-[10px] leading-5 text-[#d9d3c6]" aria-label="Transfer pre-confirmation receipt"><p className="uppercase tracking-[0.12em] text-[#f2bd63]">Live pre-confirmation receipt</p><p><span className="text-[#718092]">Network:</span> {currentNetwork?.label}</p><p className="break-all"><span className="text-[#718092]">Wallet:</span> {address}</p><p className="break-all"><span className="text-[#718092]">Inscription:</span> {selectedInscription.inscriptionId}</p><p className="break-all"><span className="text-[#718092]">Location:</span> {selectedInscription.location ?? "Not provided by UniSat"}</p><p className="break-all"><span className="text-[#718092]">Recipient:</span> {destination.trim()}</p><p><span className="text-[#718092]">Fee estimate:</span> {mempoolFeeRate ? `${feeSourceLabel || "Live fee source"}: ${mempoolFeeRate} sat/vB · fetched live before signing` : "Fetched live immediately before wallet approval"}</p>{transferLiveLoading && <p><span className="text-[#718092]">Live inscription data:</span> synchronizing…</p>}{transferLiveData && <><p><span className="text-[#718092]">Current owner:</span> {transferLiveData.owner ?? "Unavailable"}</p><p><span className="text-[#718092]">Listing:</span> {transferLiveData.listing.listed ? "Listed" : "Not listed"}</p><p><span className="text-[#718092]">Live refresh:</span> {new Date(transferLiveData.refreshedAt).toLocaleString()}</p></>}{transferLiveError && <p className="text-[#e08b7d]"><span className="text-[#718092]">Live data:</span> {transferLiveError}</p>}<p className="mt-1 text-[#a45e54]">{mobileFractalTransferOnFractal ? "Cloudflare provides protocol-checked fee UTXOs; the site reviews the exact transaction, UniSat signs after approval, and Fractal Mempool validates and broadcasts it." : "The transfer is irreversible after signing and broadcast. UniSat will show the final transaction before approval."}</p></div>
+              <div className="mt-3 border border-[#d99a54]/60 bg-[#10151a] p-3 font-mono text-[10px] leading-5 text-[#d9d3c6]" aria-label="Transfer pre-confirmation receipt"><p className="uppercase tracking-[0.12em] text-[#f2bd63]">Live pre-confirmation receipt</p><p><span className="text-[#718092]">Network:</span> {currentNetwork?.label}</p><p className="break-all"><span className="text-[#718092]">Wallet:</span> {address}</p><p className="break-all"><span className="text-[#718092]">Inscription:</span> {selectedInscription.inscriptionId}</p><p className="break-all"><span className="text-[#718092]">Location:</span> {selectedInscription.location ?? "Not provided by UniSat"}</p><p className="break-all"><span className="text-[#718092]">Recipient:</span> {destination.trim()}</p><p><span className="text-[#718092]">Fee estimate:</span> {mempoolFeeRate ? `${feeSourceLabel || "Live fee source"}: ${mempoolFeeRate} sat/vB · fetched live before signing` : "Fetched live immediately before wallet approval"}</p>{transferLiveLoading && <p><span className="text-[#718092]">Live inscription data:</span> synchronizing…</p>}{transferLiveData && <><p><span className="text-[#718092]">Current owner:</span> {transferLiveData.owner ?? "Unavailable"}</p><p><span className="text-[#718092]">Listing:</span> {transferLiveData.listing.listed ? "Listed" : "Not listed"}</p><p><span className="text-[#718092]">Live refresh:</span> {new Date(transferLiveData.refreshedAt).toLocaleString()}</p></>}{transferLiveError && <p className="text-[#e08b7d]"><span className="text-[#718092]">Live data:</span> {transferLiveError}</p>}<p className="mt-1 text-[#a45e54]">{mobileVerifiedTransfer ? "Cloudflare provides protocol-checked fee UTXOs; the site reviews the exact transaction, UniSat signs after approval, and the selected network Mempool validates and broadcasts it." : "The transfer is irreversible after signing and broadcast. UniSat will show the final transaction before approval."}</p></div>
             <label className="mt-3 flex cursor-pointer items-start gap-2 text-[#d9d3c6]">
                 <input
                   type="checkbox"
@@ -1214,9 +1213,9 @@ export function UniSatWalletConnect() {
                 disabled={transferOutcomeUnclear || (isMobileBrowser() && (!isUniSatMobileContext() || !providerAvailable)) || !confirmed || transferBusy || busy || transferLiveLoading}
                 className="mt-3 border border-[#d99a54] bg-[#d99a54] px-4 py-3 font-mono text-[10px] uppercase tracking-[0.1em] text-[#0b0d10] disabled:cursor-not-allowed disabled:opacity-40"
               >
-                {transferOutcomeUnclear ? "Transfer status unknown — verify first" : isMobileBrowser() && (!isUniSatMobileContext() || !providerAvailable) ? "Open in UniSat first" : transferBusy ? mobileFractalTransferOnFractal ? "Preparing verified transfer…" : "Opening UniSat approval…" : mobileFractalTransferOnFractal ? "Prepare Fractal transfer" : "Review transfer in UniSat"}
+                {transferOutcomeUnclear ? "Transfer status unknown — verify first" : isMobileBrowser() && (!isUniSatMobileContext() || !providerAvailable) ? "Open in UniSat first" : transferBusy ? mobileVerifiedTransfer ? "Preparing verified transfer…" : "Opening UniSat approval…" : mobileVerifiedTransfer ? "Prepare verified transfer" : "Review transfer in UniSat"}
               </button>
-              {isMobileBrowser() && <p className="mt-2 font-mono text-[10px] leading-5 text-[#e0b45f]" role="note">{mobileFractalTransferOnFractal ? "Fractal mobile uses Cloudflare’s protocol-checked fee UTXOs, a separate transaction review, UniSat `signPsbt` approval, then Fractal Mempool validation/broadcast and TXID tracking." : "Bitcoin mobile transfers use UniSat’s native `sendInscription` approval inside the UniSat in-app browser. Mempool validates the recipient and tracks the TXID after broadcast."}</p>}
+              {isMobileBrowser() && <p className="mt-2 font-mono text-[10px] leading-5 text-[#e0b45f]" role="note">{mobileVerifiedTransfer ? "Mobile transfers use protocol-checked fee UTXOs, an exact transaction review, UniSat `signPsbt` approval, then the selected network’s Mempool validation, broadcast and TXID tracking." : "Desktop transfers use UniSat’s native `sendInscription` approval. Mempool validates the recipient and tracks the TXID after broadcast."}</p>}
             </div>
           )}
           {inscriptionCursor < inscriptionTotal && (

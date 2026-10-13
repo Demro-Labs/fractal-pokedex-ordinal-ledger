@@ -2,21 +2,21 @@
 
 ## Parcours actif
 
-### Transfert ordinal Fractal sur mobile
+### Transfert ordinal Bitcoin et Fractal sur mobile
 
-Le parcours mobile Fractal ne dépend plus de `sendInscription`, qui renvoyait une réponse incomplète dans UniSat Mobile. Il réutilise le constructeur PSBT audité et testé :
+Le parcours mobile Bitcoin et Fractal ne dépend plus de `sendInscription`, qui peut renvoyer une réponse incomplète dans UniSat Mobile. Il réutilise le constructeur PSBT audité et testé :
 
 1. Mempool valide l’adresse destinataire et fournit le taux de frais courant.
-2. Le Worker Cloudflare récupère la liste de UTXO dépensables UniSat avec vérification explicite des inscriptions, Runes et Alkanes; le client recoupe ces UTXO avec ceux du wallet et contrôle les données de transaction auprès de Fractal Mempool.
+2. Le Worker Cloudflare récupère la liste de UTXO dépensables UniSat avec vérification explicite des inscriptions, Runes et Alkanes; le client recoupe ces UTXO avec ceux du wallet et contrôle les données de transaction auprès du Mempool du réseau sélectionné.
 3. L’application affiche une revue exacte du réseau, de l’inscription, du destinataire, des sorties, de la monnaie rendue et des frais. Le signataire doit confirmer cette revue avant d’ouvrir UniSat.
-4. UniSat Mobile signe le PSBT après son propre écran d’approbation. Le client vérifie alors la transaction signée et revérifie le compte, la clé et le réseau avant de la soumettre à Fractal Mempool.
-5. Fractal Mempool valide/rejette la soumission et diffuse la transaction; l’application vérifie le TXID puis suit son état dans Mempool.
+4. UniSat Mobile signe le PSBT après son propre écran d’approbation. Le client vérifie alors la transaction signée et revérifie le compte, la clé et le réseau avant de la soumettre au Mempool sélectionné.
+5. Le Mempool sélectionné valide/rejette la soumission et diffuse la transaction; l’application vérifie le TXID puis suit son état dans Mempool.
 
 Si l’issue de la diffusion est incertaine, une nouvelle tentative est verrouillée jusqu’à vérification de l’activité UniSat et de Mempool. Aucun PSBT n’est signé ou diffusé si la revue exacte est refusée ou si les contrôles d’actifs, de compte ou de réseau échouent.
 
-### Desktop et Bitcoin mobile
+### Desktop inchangé
 
-Le parcours desktop n’est pas modifié : il conserve l’appel natif UniSat `sendInscription`. Le transfert Bitcoin sur mobile conserve également le parcours natif `sendInscription`; le PSBT Cloudflare décrit ci-dessus est limité au mobile Fractal.
+Le parcours desktop n’est pas modifié : il conserve l’appel natif UniSat `sendInscription`. Le PSBT décrit ci-dessus est limité aux appareils mobiles et ne change pas la logique desktop.
 
 ### Inscription de fichier
 
