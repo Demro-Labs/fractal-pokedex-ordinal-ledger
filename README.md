@@ -216,7 +216,7 @@ curl -fsS "https://fractal-ordinal-live.servostar23.workers.dev/api/market?colle
 curl -i "https://fractal-ordinal-live.servostar23.workers.dev/api/fractal/balance?address=invalid"
 ```
 
-The first request must return Pokedex market JSON; the second must return HTTP `400` without exposing any server secret. Worker changes are validated and deployed from the Punks repository before they are consumed here.
+The first request must return Pokedex market JSON; the second must return HTTP `400` without exposing any server secret. Worker changes are validated and deployed from the Punks repository before they are consumed here. The production workflow then verifies the `opunk` and `pokedex` market routes, anonymous auth sessions for both `site` values, the allowlisted CORS preflights, the `AUTH_STORAGE` Durable Object binding, and only the name/type of the `UNISAT_API_KEY` secret binding. It never reads or prints the secret value.
 
 The production base path is:
 
