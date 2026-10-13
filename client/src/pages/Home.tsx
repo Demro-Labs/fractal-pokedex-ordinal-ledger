@@ -532,52 +532,52 @@ export default function Home() {
       </header>
       <SiteOverviewPanel
         id="fractal-pokedex-overview"
-        eyebrow="Guide de la collection"
-        title="Fractal Pokédex — 1 025 Ordinals à explorer"
-        summary="Un index visuel des Pokédex Ordinals inscrits sur Fractal Bitcoin : recherchez un Pokémon, consultez ses attributs et retrouvez les données de marché, d’inscription et de portefeuille."
+        eyebrow="Collection overview"
+        title="Fractal Pokédex — 1,025 Ordinals to explore"
+        summary="A visual index of Pokédex Ordinals inscribed on Fractal Bitcoin. Find a Pokémon, explore its attributes, and review live market, inscription, and wallet information."
         sections={[
           {
-            title: "Un Pokédex inscrit sur Fractal Bitcoin",
-            text: "Le catalogue réunit 1 025 Pokédex Ordinals avec leurs illustrations et métadonnées. Les contenus locaux restent consultables même si un fournisseur de données en direct est indisponible.",
+            title: "A Pokédex inscribed on Fractal Bitcoin",
+            text: "The catalogue brings together 1,025 Pokédex Ordinals with their artwork and metadata. Local content remains available even if a live data provider is temporarily unavailable.",
             bullets: [
-              "Chaque fiche relie le nom, le numéro, les attributs et l’identifiant original de l’inscription.",
-              "Les détails en direct peuvent ajouter le propriétaire, le créateur et le statut de listing lorsqu’ils sont accessibles.",
+              "Each entry connects the name, number, attributes, and original inscription ID.",
+              "Live details can add the owner, creator, and listing status when available.",
             ],
           },
           {
-            title: "Recherche et navigation",
-            text: "Trouvez une entrée, comparez ses attributs et parcourez la collection sans quitter le catalogue.",
+            title: "Search and navigation",
+            text: "Find an entry, compare its attributes, and browse the collection without leaving the catalogue.",
             bullets: [
-              "Recherche par nom, numéro, identifiant et caractéristiques.",
-              "Filtres par type, capacité, rareté et mise en vente; favoris et pagination.",
-              "Illustrations locales optimisées et liens source UniSat / UniScan.",
+              "Search by name, number, inscription ID, and characteristics.",
+              "Filter by type, ability, rarity, and listing status; save favourites and move through paginated results.",
+              "Optimized local artwork with source links to UniSat and UniScan.",
             ],
           },
           {
-            title: "Marché et outils UniSat",
-            text: "Le site sépare les données stables du Pokédex des informations susceptibles de changer sur le réseau ou le marché.",
+            title: "Market and UniSat tools",
+            text: "The site separates stable Pokédex metadata from information that can change on-chain or in the marketplace.",
             bullets: [
-              "Statistiques et listings récupérés en direct par le Worker Cloudflare partagé avec Ordinal Punks.",
-              "Connexion au portefeuille, chargement manuel des inscriptions, consultation des soldes et UTXO.",
-              "Préparation de transferts et d’ordres d’inscription de fichier; l’approbation finale s’ouvre dans UniSat.",
+              "Statistics and listings are fetched live through the Cloudflare Worker shared with Ordinal Punks.",
+              "Connect a wallet, load its inscriptions on demand, and review balances and UTXOs.",
+              "Prepare transfers and file-inscription orders; final approval opens in UniSat.",
             ],
           },
           {
-            title: "Preuve de propriété et sécurité",
-            text: "Sur mobile UniSat, une signature BIP-322 fraîche prouve le contrôle de l’adresse avant chaque transfert ou paiement d’inscription de fichier. La séquence Inscribe est reçu examiné → confirmer le paiement → signer la preuve de propriété → ouvrir séparément l’approbation de transaction UniSat.",
+            title: "Ownership proof and security",
+            text: "On mobile UniSat, a fresh BIP-322 signature proves control of the address before each transfer or file-inscription payment. The Inscribe sequence is review the receipt → confirm payment → sign the ownership proof → separately open UniSat transaction approval.",
             bullets: [
-              "La preuve BIP-322 ne crée pas de session et ne permet pas, à elle seule, de déplacer des fonds.",
-              "La clé privée ne quitte pas UniSat; le parcours desktop reste inchangé.",
+              "The BIP-322 proof does not create a session or move funds by itself.",
+              "The private key never leaves UniSat; the desktop flow is unchanged.",
             ],
           },
           {
-            title: "Dernière mise à jour — parcours mobile",
-            text: "La mise à jour récente renforce les opérations UniSat sur téléphone sans modifier la version desktop : une preuve de propriété doit précéder l’approbation de transaction et le portefeuille est relu après une opération réussie.",
+            title: "Latest update — mobile flow",
+            text: "The latest update strengthens UniSat operations on phones without changing the desktop version: ownership proof must come before transaction approval, and wallet data is refreshed after a successful operation.",
             bullets: [
-              "Transfert ordinal ou envoi FB : signer BIP-322 avant l’ouverture de la signature transactionnelle.",
-              "Inscribe : examiner le reçu → confirmer le paiement → signer BIP-322 → ouvrir séparément l’approbation UniSat.",
-              "Après confirmation, le solde est actualisé à partir des données live du wallet; la sélection mobile conserve le sélecteur de fichier natif et la revue du reçu.",
-              "Le flux desktop opérationnel reste inchangé.",
+              "Ordinal transfer or FB send: sign BIP-322 before transaction signing opens.",
+              "Inscribe: review the receipt → confirm payment → sign BIP-322 → separately open UniSat transaction approval.",
+              "After a successful operation, refresh the balance from live UniSat wallet data; mobile file selection keeps the native picker and receipt review.",
+              "The working desktop flow remains unchanged.",
             ],
           },
         ]}
