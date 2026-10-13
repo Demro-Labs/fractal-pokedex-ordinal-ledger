@@ -236,7 +236,7 @@ async function loadIndexedSpendableRefs(
         !Number.isSafeInteger(item.height) ||
         Number(item.height) <= 0 ||
         item.isLowFee !== false ||
-        item.isOpInRBF !== false ||
+        typeof item.isOpInRBF !== "boolean" ||
         !Array.isArray(item.inscriptions) ||
         item.inscriptions.length !== 0
       ) {
