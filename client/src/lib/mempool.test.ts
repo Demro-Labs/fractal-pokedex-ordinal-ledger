@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { LIVE_DATA_API_BASE } from "@/lib/live";
-import { getSpendableUtxos, InsufficientSafeUtxosError } from "./mempool";
+import { confirmFractalSpendableUtxos, getSpendableUtxos, InsufficientSafeUtxosError } from "./mempool";
 
 const ADDRESS = "bc1qtestaddress0000000000000000000000000";
 const SAFE_UTXO = {
@@ -75,5 +75,26 @@ describe("getSpendableUtxos", () => {
     const error = await getSpendableUtxos("FRACTAL_BITCOIN_MAINNET", ADDRESS, 143_744).catch(value => value);
     expect(error).toBeInstanceOf(InsufficientSafeUtxosError);
     expect(error).toHaveProperty("message", expect.stringMatching(/0 sats.*0 UTXO sûrs.*500\/500.*Aucun paiement n’a été lancé/));
+  });
+});
+
+describe("confirmFractalSpendableUtxos", () => {
+  it("posts the PSBT inputs to the Worker and requires a sufficient attestation", async () => {
+    installBrowserTimerMocks();
+    vi.stubGlobal("fetch", (async (input: RequestInfo | URL, init: RequestInit = {}) => {
+      expect(String(input)).toBe(`${LIVE_DATA_API_BASE}/api/spendable-utxos/confirm`);
+      expect(init.method).toBe("POST");
+      expect(JSON.parse(String(init.body))).toMatchObject({ chain: "fractal", address: ADDRESS, minimumSats: 20_500, utxos: [{ txid: "a".repeat(64), vout: 1, satoshi: 21_000 }] });
+      return Response.json({ chain: "fractal", address: ADDRESS, minimumSats: 20_500, safeSats: 21_000, sufficient: true, verifiedUtxoCount: 1, confirmedAt: new Date().toISOString() });
+    }) as typeof fetch);
+    await expect(confirmFractalSpendableUtxos(ADDRESS, 20_500, [{ txid: "a".repeat(64), vout: 1, satoshi: 21_000, scriptPk: SAFE_UTXO.scriptPk }]))
+      .resolves.toMatchObject({ sufficient: true, safeSats: 21_000 });
+  });
+
+  it("raises a typed shortage when the Worker does not confirm enough sats", async () => {
+    installBrowserTimerMocks();
+    vi.stubGlobal("fetch", (async () => Response.json({ chain: "fractal", address: ADDRESS, minimumSats: 20_500, safeSats: 18_000, sufficient: false, verifiedUtxoCount: 1, confirmedAt: new Date().toISOString() })) as typeof fetch);
+    await expect(confirmFractalSpendableUtxos(ADDRESS, 20_500, [{ txid: "a".repeat(64), vout: 1, satoshi: 18_000, scriptPk: SAFE_UTXO.scriptPk }]))
+      .rejects.toBeInstanceOf(InsufficientSafeUtxosError);
   });
 });
