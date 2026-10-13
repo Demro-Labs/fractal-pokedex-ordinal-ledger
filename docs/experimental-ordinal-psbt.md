@@ -1,40 +1,31 @@
-# Fractal Pokedex mobile Ordinal transfers
+# Fractal Pokedex — mobile UniSat transfers and file inscriptions
 
-## Current behavior
+## Active mobile flow
 
-Fractal Bitcoin transfers initiated from UniSat Mobile use the verified PSBT path in `client/src/components/UniSatWalletConnect.tsx`. The site does not call native `sendInscription` for this mobile Fractal path. Bitcoin transfers and desktop transfers continue to use UniSat's native inscription-transfer method.
+The app now uses UniSat's native wallet methods. The website does not construct or sign a custom PSBT in the active transfer or file-payment UI, and it does not require `signPsbt`, `pushPsbt`, or `pushTx` for these actions. If the native method is not exposed by the connected UniSat context, the app fails closed instead of falling back to a custom transaction builder.
 
-The PSBT is constructed locally from the selected inscription output and separate fee UTXOs. Before UniSat is asked to sign, the page displays the network, recipient, inscription, recipient output, wallet change, exact fee, fee rate and estimated virtual size. The user can cancel at that review step without signing or broadcasting.
+### Ordinal transfers
 
-After explicit approval in UniSat, the client verifies signatures and the finalized transaction against the reviewed inputs, outputs, fee accounting and fee rate. It also rechecks the wallet account, public key and network before broadcasting the verified transaction through the Fractal Mempool API. A wallet signature is never requested automatically.
+The client validates the destination with the matching network's Mempool endpoint, obtains the live fee estimate, and calls UniSat `sendInscription`. UniSat builds the transaction, presents its own final review, requests the user's approval, signs, and broadcasts. The app checks the returned TXID and then tracks it in the selected network's Mempool. An uncertain result blocks repeat attempts until the user checks wallet activity and Mempool.
 
-## Fees and RBF
+### File inscriptions
 
-The transaction signals opt-in Replace-by-Fee using sequence `0xfffffffd` on every input. This only signals that the transaction may be replaceable under applicable network policy; the Pokedex site does **not** construct or submit a replacement transaction and provides no fee-bump control. The fee rate is taken from the live fee-estimate service and the exact total fee is shown in the pre-sign review. Any later replacement must be handled separately in a compatible wallet/tool after checking the original transaction status.
+The existing shared Cloudflare Worker proxies UniSat Inscribe API V5; its server-side `UNISAT_API_KEY` is not exposed to the browser. Before creating an order, the client validates the connected wallet address with Mempool. Before paying an order, it checks that the wallet is still on the receipt's network, validates UniSat's payment address with Mempool, fetches a live fee rate, and calls UniSat `sendBitcoin`. The user must approve the amount and final fee in UniSat. Once UniSat returns a TXID, the app tracks the payment in Mempool and polls the UniSat V5 order status.
 
-The constructor refuses dust outputs, unsupported input scripts, inconsistent inscription locations, fee inputs that may contain known inscriptions, invalid signatures, changed outputs, unexpected input order, or fee-accounting mismatches. Runes and Alkanes are not transferred by this feature; fee UTXOs carrying these assets are excluded.
+## What Mempool does and does not approve
 
-## UniSat safe-UTXO Worker contract
+Mempool is used for network-specific address validation, live fee estimates, and post-broadcast transaction visibility/confirmation tracking. The public Mempool API does not provide this client with a pre-signature approval of a UniSat-native transaction or protocol-level certification. The wallet's review and explicit approval remain authoritative for signing and broadcasting.
 
-The Pokedex uses the existing shared Cloudflare Worker `fractal-ordinal-live` for fee UTXO attestation. The Worker was updated and deployed with the Ordinal Punks repository's server-side change ([PR #117](https://github.com/Demro-Labs/ordinal-punks-collection/pull/117)); this Pokedex change does not modify Cloudflare settings, bindings or secrets. The UniSat API key remains server-side and is not sent to the browser.
+The older custom PSBT modules and their offline tests remain in the repository for isolated research/regression coverage; they are not connected to the active mobile UI. The low-fee UTXO Worker endpoint is likewise not part of these native wallet calls.
 
-The current client requires the explicit `inscriptionsRunesAlkanesChecked: true` marker, `isLowFee: false`, `isOpInRBF: false`, and an empty `inscriptions` array. The Worker checks outpoint details and protocol balances fail-closed, and limits each inspected page to 25 UTXOs. The Pokedex clients request 25-item pages to match that contract. A missing, malformed, oversized or unverified response stops PSBT preparation before signing.
+## Verification and manual check
 
-## Ambiguous outcomes
-
-If UniSat returns an incomplete native response (including the `toAddress` error), the transfer returns no valid transaction ID, or Mempool's broadcast response is uncertain, the site locks further transfer attempts for the current tab. The user must first check UniSat activity and the selected network's Mempool. A new attempt can be unlocked only after explicitly confirming that check. The site does not automatically retry an uncertain transfer.
-
-## Validation and remaining manual check
-
-Offline validation uses deterministic test-only keys and mocked UniSat/Worker/Mempool responses. It covers PSBT construction and signature verification, supported input/output scripts, RBF sequence, exact-fee review acceptance/cancellation, asset-attestation failures, missing safety flags and ambiguous outcomes. The current run passed 39 tests, TypeScript checking and the production build. No live wallet was asked to sign, no real UTXO was unlocked, and no transaction was broadcast during these checks.
-
-Before relying on the flow with a real mainnet wallet, verify in the target UniSat Mobile version that `signPsbt` returns the documented PSBT shape for the supported input types. Review the Pokedex preview and UniSat's signing screen carefully. Do not approve if the network, recipient, inscription, outputs or fees differ.
+The native-wallet helper tests verify the exact UniSat method calls, request parameters, returned TXID handling, and fail-closed behavior. TypeScript checks and production builds pass; the full offline Pokedex suite passes. No live wallet was asked to sign, no real UTXO was unlocked, and no transaction was broadcast during these checks. A real-device smoke test inside the target UniSat Mobile version remains necessary before production rollout.
 
 ## References
 
 - [UniSat Wallet API](https://docs.unisat.io/developer-support/open-api-documentation/unisat-wallet)
 - [UniSat connect with UniSat Mobile](https://docs.unisat.io/developer-support/open-api-documentation/unisat-wallet/connect-with-unisat-mobile-wallet)
-- [UniSat Runes indexer API](https://github.com/unisat-wallet/unisat-dev-docs/blob/master/open-api/auto-generated/docs/runes-indexer.md)
-- [UniSat Alkanes indexer API](https://github.com/unisat-wallet/unisat-dev-docs/blob/master/open-api/auto-generated/docs/alkanes-indexer.md)
-- [Bitcoin Core opt-in RBF FAQ](https://bitcoincore.org/en/faq/optin_rbf/)
+- [UniSat Inscribe API V5](https://github.com/unisat-wallet/unisat-dev-docs/blob/master/open-api/auto-generated/docs/inscribe-v5.md)
 - [Mempool REST API](https://mempool.space/docs/api/rest)
+- [Mempool FAQ](https://mempool.space/docs/faq)
