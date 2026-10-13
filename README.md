@@ -207,6 +207,17 @@ pnpm run preview
 
 The site is deployed automatically to GitHub Pages from `main` by the workflow in `.github/workflows/`.
 
+The Cloudflare Worker is intentionally shared with Ordinal Punks. Its source of truth and deployment workflow live in `Demro-Labs/ordinal-punks-collection`; this repository must not add a second Worker with the same name or deploy an incomplete copy over the shared service. The Pokedex frontend already uses the shared Worker URL above, and the Worker allowlist includes the Pokedex collection and origin.
+
+Before releasing a Pokedex frontend change, the shared live contract can be checked without wallet credentials:
+
+```bash
+curl -fsS "https://fractal-ordinal-live.servostar23.workers.dev/api/market?collectionId=pokedex&start=0&limit=1"
+curl -i "https://fractal-ordinal-live.servostar23.workers.dev/api/fractal/balance?address=invalid"
+```
+
+The first request must return Pokedex market JSON; the second must return HTTP `400` without exposing any server secret. Worker changes are validated and deployed from the Punks repository before they are consumed here.
+
 The production base path is:
 
 ```text
