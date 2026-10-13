@@ -110,6 +110,10 @@ The inscription panel supports:
 
 The site never signs or broadcasts an inscription payment on behalf of the user. Payment and final approval remain inside UniSat.
 
+### Mobile ownership proof
+
+On mobile UniSat, a fresh BIP-322 signature proves control of the selected address before an ordinal transfer, FB send, or file-inscription payment. For Inscribe, the order is **review receipt → confirm payment → sign the ownership proof → separately open UniSat transaction approval**. The ownership proof does not create a login session or authorize a payment. The existing desktop transaction flow is unchanged.
+
 ## Architecture
 
 ```text
@@ -148,6 +152,7 @@ Important Worker routes include:
 - `/api/live-inscription` — live owner, creator, and listing information;
 - `/api/spendable-utxos` — admissible fee UTXOs for transfers;
 - `/api/inscribe/order` — inscription order creation and status;
+- `/api/auth/ownership/challenge` and `/api/auth/ownership/verify` — short-lived mobile ownership proofs only, never transaction authorization;
 - transaction and mempool-related routes used by receipts and confirmation tracking.
 
 The Worker stores the UniSat API key in the server-side secret `UNISAT_API_KEY`. It must never be included in frontend source, static assets, or a public build artifact.
@@ -207,6 +212,8 @@ pnpm run preview
 
 The site is deployed automatically to GitHub Pages from `main` by the workflow in `.github/workflows/`.
 
+The footer's **Version GitHub déployée** links to the exact commit used for the Pages build and shows its commit date. The Pages workflow injects this metadata at build time.
+
 The Cloudflare Worker is intentionally shared with Ordinal Punks. Its source of truth and deployment workflow live in `Demro-Labs/ordinal-punks-collection`; this repository must not add a second Worker with the same name or deploy an incomplete copy over the shared service. The Pokedex frontend already uses the shared Worker URL above, and the Worker allowlist includes the Pokedex collection and origin.
 
 The latest Punks production updates are therefore already active for Pokedex through that shared service: Buffer initialization before BIP-322, a local `workerd` smoke test, Smart Placement, privacy-conscious sampled logs, and post-deployment checks for both collections and auth origins. The corrected Cloudflare Production run is [#38456102630](https://github.com/Demro-Labs/ordinal-punks-collection/actions/runs/38456102630). Operational recovery steps are in the [shared Worker Production runbook](https://github.com/Demro-Labs/ordinal-punks-collection/blob/main/workers/PRODUCTION-RUNBOOK.md).
@@ -242,6 +249,8 @@ git diff --check
 ```
 
 Pull requests are expected to pass the repository security, dependency, and CodeQL checks before merge.
+
+Dependabot version-update and security-update pull requests are disabled by repository policy. GitHub vulnerability alerts remain enabled; manually maintained security and build checks continue to run.
 
 ## Security and user-control principles
 

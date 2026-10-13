@@ -1051,7 +1051,7 @@ export default function Home() {
                 </p>
                 <p>Powered by Fractal Ordinals / UniSat / Fractal Bitcoin</p>
                 <p>
-                  Version GitHub: {" "}
+                  Version GitHub déployée: {" "}
                   <a
                     href={GITHUB_BUILD_SHA ? `${GITHUB_REPOSITORY_URL}/commit/${GITHUB_BUILD_SHA}` : GITHUB_REPOSITORY_URL}
                     target="_blank"
