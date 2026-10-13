@@ -86,12 +86,12 @@ export async function getSpendableUtxos(network: string, address: string, minimu
   let scannedCount = 0;
   let sourceTotal: number | null = null;
   for (let pageNumber = 0; pageNumber < MAX_SPENDABLE_UTXO_PAGES; pageNumber += 1) {
-    const query = new URLSearchParams({ chain, address, cursor: String(cursor), size: String(SPENDABLE_UTXO_PAGE_SIZE) });
+    const query: URLSearchParams = new URLSearchParams({ chain, address, cursor: String(cursor), size: String(SPENDABLE_UTXO_PAGE_SIZE) });
     type SpendableUtxoPage = {
       chain?: string; address?: string; cursor?: number; nextCursor?: number; total?: number; scannedCount?: number;
       utxo?: Array<Record<string, unknown>>;
     };
-    const page = await requestJson<SpendableUtxoPage>(`${LIVE_DATA_API_BASE}/api/spendable-utxos?${query}`, 15_000);
+    const page: SpendableUtxoPage = await requestJson<SpendableUtxoPage>(`${LIVE_DATA_API_BASE}/api/spendable-utxos?${query}`, 15_000);
     const pageScannedCount = page.scannedCount;
     const nextCursor = page.nextCursor;
     const total = page.total;
