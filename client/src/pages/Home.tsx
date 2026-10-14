@@ -1104,12 +1104,12 @@ export default function Home() {
                 </p>
                 <p>Powered by Fractal Ordinals / UniSat / Fractal Bitcoin</p>
                 <p>
-                  Version GitHub déployée: {" "}
+                  Deployed GitHub version: {" "}
                   <a
                     href={GITHUB_BUILD_SHA ? `${GITHUB_REPOSITORY_URL}/commit/${GITHUB_BUILD_SHA}` : GITHUB_REPOSITORY_URL}
                     target="_blank"
                     rel="noreferrer"
-                    title={GITHUB_BUILD_SHA ? `Voir le commit ${GITHUB_BUILD_SHA}` : "Dépôt GitHub"}
+                    title={GITHUB_BUILD_SHA ? `Voir le commit ${GITHUB_BUILD_SHA}` : "GitHub repository"}
                     className="text-[#d9d3c6] underline decoration-[#d99a54] underline-offset-2"
                   >
                     #{GITHUB_BUILD_SHA ? GITHUB_BUILD_SHA.slice(0, 7) : "dev"}
