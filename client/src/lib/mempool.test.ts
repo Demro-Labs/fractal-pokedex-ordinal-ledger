@@ -74,7 +74,7 @@ describe("getSpendableUtxos", () => {
 
     const error = await getSpendableUtxos("FRACTAL_BITCOIN_MAINNET", ADDRESS, 143_744).catch(value => value);
     expect(error).toBeInstanceOf(InsufficientSafeUtxosError);
-    expect(error).toHaveProperty("message", expect.stringMatching(/0 sats.*0 UTXO sûrs.*500\/500.*Aucun paiement n’a été lancé/));
+    expect(error).toHaveProperty("message", expect.stringMatching(/0 sats.*0 safe UTXOs.*500\/500.*No payment was started/));
   });
 });
 
