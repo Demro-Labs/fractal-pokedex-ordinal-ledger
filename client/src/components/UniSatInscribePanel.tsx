@@ -465,7 +465,7 @@ export function UniSatInscribePanel({ site = "pokedex" }: { site?: "punks" | "po
     let paymentPromise: Promise<string>;
     try {
       // Invoke UniSat synchronously in the click handler so both extension and in-app wallet can show approval.
-      paymentPromise = sendNativeUniSatBitcoinPayment(provider, receipt.payAddress, receipt.amount, feeRate, { mobile: isMobileUniSatDevice() });
+      paymentPromise = sendNativeUniSatBitcoinPayment(provider, receipt.payAddress, receipt.amount, feeRate);
     } catch (error) {
       if (isMobileUniSatDevice()) saveActiveMobileOrder(receipt, "", false);
       setStage("awaiting-approval");
