@@ -90,7 +90,7 @@ const SPENDABLE_UTXO_PAGE_SIZE = 25;
 const MAX_SPENDABLE_UTXO_PAGES = 20;
 
 /** Fetch confirmed, non-asset UTXOs; a historical RBF flag does not make a confirmed output replaceable. */
-export async function getSpendableUtxos(network: string, address: string, minimumSats: number): Promise<SpendableUtxo[]> {
+export async function getSpendableUtxos(network: string, address: string, minimumSats: number, options: { mobile?: boolean } = {}): Promise<SpendableUtxo[]> {
   const chain = network === "BITCOIN_MAINNET" ? "bitcoin" : network === "FRACTAL_BITCOIN_MAINNET" ? "fractal" : null;
   if (!chain || !address || !Number.isSafeInteger(minimumSats) || minimumSats <= 0) {
     throw new Error("Invalid network, address, or amount for spendable UTXO verification.");
@@ -102,6 +102,7 @@ export async function getSpendableUtxos(network: string, address: string, minimu
   let sourceTotal: number | null = null;
   for (let pageNumber = 0; pageNumber < MAX_SPENDABLE_UTXO_PAGES; pageNumber += 1) {
     const query: URLSearchParams = new URLSearchParams({ chain, address, cursor: String(cursor), size: String(SPENDABLE_UTXO_PAGE_SIZE) });
+    if (options.mobile) query.set("mobile", "1");
     type SpendableUtxoPage = {
       chain?: string; address?: string; cursor?: number; nextCursor?: number; total?: number; scannedCount?: number;
       utxo?: Array<Record<string, unknown>>;
