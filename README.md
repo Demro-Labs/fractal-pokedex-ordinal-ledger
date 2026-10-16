@@ -110,9 +110,9 @@ The inscription panel supports:
 
 The site never signs or broadcasts an inscription payment on behalf of the user. Payment and final approval remain inside UniSat.
 
-### Mobile ownership proof
+### Ownership proof (BIP-322)
 
-On mobile UniSat, a fresh BIP-322 signature proves control of the selected address before an ordinal transfer, FB send, or file-inscription payment. For Inscribe, the order is **review receipt → confirm payment → sign the ownership proof → separately open UniSat transaction approval**. The ownership proof does not create a login session or authorize a payment. The existing desktop transaction flow is unchanged.
+On mobile UniSat, a fresh BIP-322 signature proves control of the selected address before an ordinal transfer, FB send, or file-inscription payment. The classic BRC-20 and BRC20-Prog transfer flows require the same proof on desktop and mobile before creating an inscription order/payment, then ask UniSat separately to approve each Bitcoin transaction. For Inscribe on mobile, the order is **review receipt → confirm payment → sign the ownership proof → separately open UniSat transaction approval**. The proof never creates a login session or authorizes a payment; other existing desktop flows remain unchanged.
 
 ## Architecture
 
@@ -152,8 +152,16 @@ Important Worker routes include:
 - `/api/live-inscription` — live owner, creator, and listing information;
 - `/api/spendable-utxos` — admissible fee UTXOs for transfers;
 - `/api/inscribe/order` — inscription order creation and status;
-- `/api/auth/ownership/challenge` and `/api/auth/ownership/verify` — short-lived mobile ownership proofs only, never transaction authorization;
+- `/api/auth/ownership/challenge` and `/api/auth/ownership/verify` — short-lived ownership proofs, never transaction authorization;
 - transaction and mempool-related routes used by receipts and confirmation tracking.
+
+### BRC protocol paths
+
+- **Classic BRC-20 (4–5 character tickers)** remains on the classic UniSat indexer and its inscription-transfer flow.
+- **BRC20-Prog (6-character tickers)** uses a separate UniSat Bitcoin-only indexer route; no Fractal request is made. Its transfer flow uses the BRC-20 transfer inscription format and requires a fresh BIP-322 ownership proof before payment and transfer approvals on desktop and mobile.
+- **BRC2.0 programmable module** has a distinct deploy/call JSON composer (`p: brc20-prog`). It currently drafts and validates payloads only: it does not create/broadcast the inscription or the required activation transaction to `OP_RETURN "BRC20PROG"`. The optional RPC status check only probes `eth_blockNumber` and cannot verify module identity.
+
+The Pokédex uses the shared Punks Worker for `/api/brc20/balances`, `/api/brc20-prog/balances` (Bitcoin only), and `/api/brc20-prog/module/status`. Do not create a second Worker. Optional RPC secrets belong only in the shared Worker environment; see the Punks repository’s `workers/PRODUCTION-RUNBOOK.md`.
 
 The Worker stores the UniSat API key in the server-side secret `UNISAT_API_KEY`. It must never be included in frontend source, static assets, or a public build artifact.
 
