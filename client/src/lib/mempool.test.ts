@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { LIVE_DATA_API_BASE } from "@/lib/live";
-import { confirmFractalSpendableUtxos, getSpendableUtxos, InsufficientSafeUtxosError } from "./mempool";
+import { confirmFractalSpendableUtxos, getMempoolConfig, getSpendableUtxos, InsufficientSafeUtxosError, trackMempoolTransaction } from "./mempool";
 
 const ADDRESS = "bc1qtestaddress0000000000000000000000000";
 const SAFE_UTXO = {
@@ -96,5 +96,36 @@ describe("confirmFractalSpendableUtxos", () => {
     vi.stubGlobal("fetch", (async () => Response.json({ chain: "fractal", address: ADDRESS, minimumSats: 20_500, safeSats: 18_000, sufficient: false, verifiedUtxoCount: 1, confirmedAt: new Date().toISOString() })) as typeof fetch);
     await expect(confirmFractalSpendableUtxos(ADDRESS, 20_500, [{ txid: "a".repeat(64), vout: 1, satoshi: 18_000, scriptPk: SAFE_UTXO.scriptPk }]))
       .rejects.toBeInstanceOf(InsufficientSafeUtxosError);
+  });
+});
+
+describe("trackMempoolTransaction network routing", () => {
+  it.each([
+    { network: "BITCOIN_MAINNET", endpoint: "https://mempool.space", label: "Bitcoin" },
+    { network: "FRACTAL_BITCOIN_MAINNET", endpoint: "https://mempool.fractalbitcoin.io", label: "Fractal Bitcoin" },
+  ])("uses only the $label Mempool for its network enum", async ({ network, endpoint, label }) => {
+    installBrowserTimerMocks();
+    const txid = "b".repeat(64);
+    const urls: string[] = [];
+    vi.stubGlobal("fetch", (async (input: RequestInfo | URL) => {
+      urls.push(String(input));
+      return Response.json({ confirmed: true, block_height: 123 });
+    }) as typeof fetch);
+
+    const receipt = await trackMempoolTransaction(txid, network);
+
+    expect(urls).toEqual([`${endpoint}/api/tx/${txid}/status`]);
+    expect(receipt).toMatchObject({ txid, network: label, status: "confirmed", blockHeight: 123 });
+  });
+
+  it("rejects an unknown network instead of defaulting to Fractal", async () => {
+    installBrowserTimerMocks();
+    const fetchMock = vi.fn(async () => Response.json({ confirmed: true }));
+    vi.stubGlobal("fetch", fetchMock as typeof fetch);
+
+    await expect(trackMempoolTransaction("b".repeat(64), "UNKNOWN_NETWORK"))
+      .rejects.toThrow(/No Mempool endpoint/i);
+    expect(getMempoolConfig("UNKNOWN_NETWORK")).toBeUndefined();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
