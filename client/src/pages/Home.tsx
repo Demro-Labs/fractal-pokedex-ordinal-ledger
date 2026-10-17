@@ -31,6 +31,7 @@ import {
 import { cacheCollectionResponse, readCachedCollection } from "@/lib/collection-cache";
 import { requestUniSatTransfer } from "@/components/UniSatWalletConnect";
 import { OrdiWallet } from "@/components/OrdiWallet";
+import { LocalVaultPagePanel } from "@/components/LocalVaultSiteDashboard";
 
 const BUILD_META = import.meta.env as ImportMetaEnv & {
   readonly VITE_GITHUB_SHA?: string;
@@ -532,6 +533,7 @@ export default function Home() {
           </div>
         </div>
       </header>
+      <LocalVaultPagePanel site="pokedex" />
       <SiteOverviewPanel
         id="fractal-pokedex-overview"
         eyebrow="Collection overview"
