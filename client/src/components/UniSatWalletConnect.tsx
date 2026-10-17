@@ -577,7 +577,7 @@ export function UniSatWalletConnect({ site = "pokedex" }: { site?: "punks" | "po
   const switchToBitcoin = async () => {
     const provider = window.unisat;
     if (!provider?.switchChain) {
-      setError("Mettez à jour UniSat Wallet pour activer le changement de réseau Bitcoin mainnet.");
+      setError("Update UniSat Wallet to enable switching to Bitcoin mainnet.");
       return;
     }
     setBusy(true);
@@ -586,9 +586,9 @@ export function UniSatWalletConnect({ site = "pokedex" }: { site?: "punks" | "po
       const selectedChain = await provider.switchChain(BITCOIN_MAINNET);
       setChain(selectedChain);
       clearOwnedInscriptions();
-      if (selectedChain.enum !== BITCOIN_MAINNET) setError("UniSat n’a pas confirmé Bitcoin mainnet.");
+      if (selectedChain.enum !== BITCOIN_MAINNET) setError("UniSat did not confirm Bitcoin mainnet.");
     } catch (cause) {
-      setError(describeWalletError(cause, "Le changement vers Bitcoin mainnet a été annulé ou a échoué."));
+      setError(describeWalletError(cause, "Switching to Bitcoin mainnet was cancelled or failed."));
     } finally {
       setBusy(false);
     }
@@ -691,7 +691,7 @@ export function UniSatWalletConnect({ site = "pokedex" }: { site?: "punks" | "po
         const liveAfter = await fetchLiveInscription(inscriptionId, controller.signal, networkEnum, true);
         if (run !== trackingRunRef.current) return;
         setFinalReceipt(current => current && current.txid === transactionId
-          ? { ...current, status: "confirmed", message: "Transaction confirmed on-chain. Données live actualisées.", checkedAt: new Date().toISOString(), liveAfter }
+          ? { ...current, status: "confirmed", message: "Transaction confirmed on-chain. Live data refreshed.", checkedAt: new Date().toISOString(), liveAfter }
           : current);
         return;
       } catch {
@@ -703,7 +703,7 @@ export function UniSatWalletConnect({ site = "pokedex" }: { site?: "punks" | "po
     }
     if (run !== trackingRunRef.current) return;
     setFinalReceipt(current => current && current.txid === transactionId
-      ? { ...current, status: "confirmed", message: "Transaction confirmed on-chain. Les données UniSat live restent indisponibles; la confirmation Mempool est conservée.", checkedAt: new Date().toISOString() }
+      ? { ...current, status: "confirmed", message: "Transaction confirmed on-chain. UniSat live data is still unavailable; the Mempool confirmation is preserved.", checkedAt: new Date().toISOString() }
       : current);
   };
 
@@ -743,7 +743,7 @@ export function UniSatWalletConnect({ site = "pokedex" }: { site?: "punks" | "po
             setMempoolStatus("confirmed");
             setMempoolMessage("Transaction confirmed on-chain.");
             setMempoolBlockHeight(typeof status.block_height === "number" ? status.block_height : null);
-            setFinalReceipt(current => current ? { ...current, status: "confirmed", message: liveBefore ? "Transaction confirmed on-chain. Synchronisation des données UniSat en cours…" : "Transaction confirmed on-chain.", blockHeight: typeof status.block_height === "number" ? status.block_height : null, checkedAt: new Date().toISOString() } : current);
+            setFinalReceipt(current => current ? { ...current, status: "confirmed", message: liveBefore ? "Transaction confirmed on-chain. Syncing UniSat data…" : "Transaction confirmed on-chain.", blockHeight: typeof status.block_height === "number" ? status.block_height : null, checkedAt: new Date().toISOString() } : current);
             if (liveBefore && networkEnum) void refreshConfirmedLiveData(transactionId, liveBefore.inscriptionId, networkEnum, run);
             return;
           }
