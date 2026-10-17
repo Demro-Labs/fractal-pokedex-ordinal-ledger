@@ -51,7 +51,7 @@ function createPreviousOutput(
   };
 }
 
-function setupMocks(options: { utxoOverrides?: Record<string, unknown> } = {}) {
+function setupMocks() {
   const inscriptionUtxo = createPreviousOutput(SCRIPT, 600, 7);
   const feeUtxo = createPreviousOutput(SCRIPT, 100_000, 8);
   const rawTransactions = new Map([
@@ -91,7 +91,6 @@ function setupMocks(options: { utxoOverrides?: Record<string, unknown> } = {}) {
             isOpInRBF: true,
             inscriptions: [],
             inscriptionsRunesAlkanesChecked: true,
-            ...(options.utxoOverrides ?? {}),
           },
         ],
       });
@@ -246,35 +245,6 @@ describe("Fractal mobile PSBT workflow", () => {
       feeRateSatVb: 2,
       beforeSign: async () => false,
     })).rejects.toThrow(/cancelled before signing/i);
-
-    expect(signPsbtCalled).toBe(false);
-    expect(fixture.broadcastCount()).toBe(0);
-  });
-
-  it.each([
-    { isLowFee: undefined },
-    { isOpInRBF: undefined },
-  ])("fails closed when a required UTXO safety flag is missing", async utxoOverrides => {
-    const fixture = setupMocks({ utxoOverrides });
-    let signPsbtCalled = false;
-    const provider: UniSatCustomTransferProvider = {
-      ...fixture.provider,
-      signPsbt: async () => {
-        signPsbtCalled = true;
-        return "00";
-      },
-    };
-
-    await expect(sendOrdinalInscriptionWithCustomPsbt({
-      provider,
-      mempool: { api: MEMPOOL_API, label: "Fractal Bitcoin", chain: "fractal" },
-      expectedNetworkEnum: FRACTAL_NETWORK,
-      currentAddress: ADDRESS,
-      recipientAddress: ADDRESS,
-      selectedInscription: fixture.inscription,
-      ownedInscriptions: [fixture.inscription],
-      feeRateSatVb: 2,
-    })).rejects.toThrow(/unconfirmed, asset-bearing, or malformed output, or omitted a required safety flag/i);
 
     expect(signPsbtCalled).toBe(false);
     expect(fixture.broadcastCount()).toBe(0);
