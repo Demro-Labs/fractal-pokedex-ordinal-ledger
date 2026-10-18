@@ -2,7 +2,11 @@
 
 ## Parcours actif
 
-### Transfert ordinal Bitcoin et Fractal sur desktop et mobile
+### Transfert Ordinal par Ordi Wallet Local Vault (Bitcoin et Fractal)
+
+Depuis le panneau Live Ordinals du coffre déverrouillé, le transfert d’une inscription unique est préparé, signé et diffusé par Ordi Wallet localement, sur le site responsive (desktop/mobile) comme dans l’extension desktop. La clé privée ne quitte pas le vault. Avant la signature, le client exige une liste complète des inscriptions de l’adresse, recoupe la valeur de la sortie source avec la transaction brute, vérifie l’adresse destinataire et le taux de frais live, exclut les UTXO inscrits des entrées de frais et revalide tous les UTXO de frais confirmés et sans inscription/Rune/Alkane. Les inscriptions multiples dans la même sortie et toute liste d’indexeur incomplète sont refusées. La revue affiche le réseau, l’inscription, le destinataire, les entrées, les frais et le change; l’utilisateur confirme séparément la signature locale puis la diffusion irréversible. Le TXID est contrôlé et tout état de diffusion incertain bloque une nouvelle tentative dans l’interface.
+
+### Transfert ordinal UniSat indépendant
 
 Le desktop conserve le transfert natif UniSat `sendInscription` si le wallet l’expose, avec repli sur le PSBT vérifié si cette API manque. Sur UniSat Mobile et Fractal Bitcoin mainnet, le site utilise toujours le PSBT vérifié — même si le provider expose `sendInscription` — car la méthode native mobile a renvoyé une réponse incomplète (`toAddress` indéfini) dans le cas rapporté. Le transfert natif Bitcoin mobile reste inchangé; le PSBT vérifié sert de repli si l’API native manque.
 
@@ -26,6 +30,7 @@ Le dashboard propose le même formulaire de transfert FB dans UniSat Desktop et 
 
 ## Rôle de chaque service
 
+- **Ordi Wallet Local Vault** : dérive et conserve les clés localement, prépare/revoit puis signe le transfert Ordinal en mémoire; aucune clé privée n’est envoyée au Worker ou à UniSat. La diffusion reste une étape distincte et explicite.
 - **Cloudflare Worker** : proxy UniSat Inscribe V5 et proxy UniSat Inscribe V5; il ne signe aucune transaction.
 - **UniSat Desktop ou Mobile** : exécute `sendBitcoin` pour le paiement Inscribe; pour les transferts ordinaux, desktop conserve `sendInscription` si disponible, tandis que Fractal mobile signe le PSBT vérifié après la revue explicite. Bitcoin mobile conserve le chemin natif s’il est disponible.
 - **Mempool** : valide les adresses, fournit les frais, vérifie les données des entrées, accepte ou rejette la soumission de transaction, la diffuse et en suit les confirmations. L’API publique ne constitue pas une approbation protocolaire préalable à la signature; les écrans de revue du site et d’UniSat restent essentiels.
