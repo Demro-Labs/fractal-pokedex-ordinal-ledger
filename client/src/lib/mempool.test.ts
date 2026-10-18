@@ -57,6 +57,32 @@ describe("getSpendableUtxos", () => {
     expect(result[0].height).toBeGreaterThan(0);
   });
 
+  it("keeps scanning until the exact PSBT outpoint is verified", async () => {
+    installBrowserTimerMocks();
+    const cursors: number[] = [];
+    vi.stubGlobal("fetch", (async (input: RequestInfo | URL) => {
+      const cursor = Number(new URL(String(input)).searchParams.get("cursor"));
+      cursors.push(cursor);
+      const utxo = cursor === 0 ? SAFE_UTXO : { ...SAFE_UTXO, txid: "b".repeat(64), vout: 0 };
+      return Response.json({ chain: "fractal", address: ADDRESS, cursor, nextCursor: cursor + 1, total: 2, scannedCount: 1, utxo: [utxo] });
+    }) as typeof fetch);
+
+    const result = await getSpendableUtxos("FRACTAL_BITCOIN_MAINNET", ADDRESS, 488_045, { requiredOutpoints: [`${"b".repeat(64)}:0`] });
+    expect(cursors).toEqual([0, 1]);
+    expect(result).toEqual([{ ...SAFE_UTXO, txid: "b".repeat(64), vout: 0 }]);
+  });
+
+  it("rejects when the safe index only contains a different outpoint", async () => {
+    installBrowserTimerMocks();
+    vi.stubGlobal("fetch", (async (input: RequestInfo | URL) => {
+      const cursor = Number(new URL(String(input)).searchParams.get("cursor"));
+      return Response.json({ chain: "fractal", address: ADDRESS, cursor, nextCursor: cursor + 1, total: 1, scannedCount: 1, utxo: [SAFE_UTXO] });
+    }) as typeof fetch);
+
+    await expect(getSpendableUtxos("FRACTAL_BITCOIN_MAINNET", ADDRESS, 488_045, { requiredOutpoints: [`${"b".repeat(64)}:0`] }))
+      .rejects.toThrow(/exact PSBT input/i);
+  });
+
   it("reports the confirmed safe total and scan coverage when funds remain insufficient", async () => {
     installBrowserTimerMocks();
     vi.stubGlobal("fetch", (async (input: RequestInfo | URL) => {
