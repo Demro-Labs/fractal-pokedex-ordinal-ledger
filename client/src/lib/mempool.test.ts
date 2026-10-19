@@ -148,6 +148,34 @@ describe("getSpendableUtxos", () => {
       .rejects.toThrow(/exact PSBT input/i);
   });
 
+  it("reports satoshi totals for rejected Rune outputs when the safe fee balance is insufficient", async () => {
+    installBrowserTimerMocks();
+    vi.stubGlobal("fetch", (async () => Response.json({
+      chain: "fractal",
+      address: ADDRESS,
+      cursor: 0,
+      nextCursor: 1,
+      total: 1,
+      scannedCount: 1,
+      utxo: [],
+      diagnostics: {
+        identityMismatch: 0, invalidValue: 0, invalidScript: 0, unconfirmedOrInvalidHeight: 0,
+        invalidFlags: 0, hasInscriptionOrUnknown: 0, detailMismatch: 0, spentOrUnknown: 0,
+        hasRunes: 1, hasAlkanes: 0,
+      },
+      diagnosticsSats: {
+        unconfirmedOrInvalidHeight: 0, invalidFlags: 0, hasInscriptionOrUnknown: 0,
+        detailMismatch: 0, spentOrUnknown: 0, hasRunes: 596_598, hasAlkanes: 0,
+      },
+    })) as typeof fetch);
+
+    const error = await getSpendableUtxos("FRACTAL_BITCOIN_MAINNET", ADDRESS, 1_700).catch(value => value);
+    expect(error).toBeInstanceOf(InsufficientSafeUtxosError);
+    expect(error.message).toContain("Rune détectée: 1");
+    expect(error.message).toContain("Rune détectée: 596,598 sats");
+    expect(error.message).toContain("No payment was started");
+  });
+
   it("reports the confirmed safe total and scan coverage when funds remain insufficient", async () => {
     installBrowserTimerMocks();
     vi.stubGlobal("fetch", (async (input: RequestInfo | URL) => {
