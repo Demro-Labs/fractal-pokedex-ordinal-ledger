@@ -43,7 +43,11 @@ export async function fetchAllLiveMarketListings(collectionId: string, totalList
       } catch (error) {
         if (signal?.aborted) throw error;
         lastError = error;
-        if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 300 * (attempt + 1)));
+        const statusMatch = error instanceof Error ? error.message.match(/\((\d{3})\)\.?$/) : null;
+        const status = statusMatch ? Number(statusMatch[1]) : null;
+        // Do not amplify UniSat/Worker throttling with an immediate retry storm.
+        if (status === 429 || status === 503) return;
+        if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 500 * (2 ** attempt)));
       }
     }
   };
