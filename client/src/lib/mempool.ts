@@ -106,6 +106,16 @@ export async function getRecommendedFeeRate(network: string) {
   return Math.ceil(estimate.feeRate);
 }
 
+/** Minimum standard-output dust floor; the PSBT builder still checks actual fee sufficiency. */
+export function minimumSpendableSatsForScript(scriptHex: string): number {
+  const script = typeof scriptHex === "string" ? scriptHex.toLowerCase() : "";
+  if (/^0014[a-f0-9]{40}$/.test(script)) return 294; // P2WPKH
+  if (/^(?:0020[a-f0-9]{64}|5120[a-f0-9]{64})$/.test(script)) return 330; // P2WSH / P2TR
+  if (/^a914[a-f0-9]{40}87$/.test(script)) return 540; // P2SH
+  if (/^76a914[a-f0-9]{40}88$/.test(script)) return 546; // P2PKH
+  return 600; // Unknown/non-standard script stays conservative.
+}
+
 export type SpendableUtxo = { address: string; txid: string; vout: number; satoshi: number; scriptPk: string; height: number; inscriptionsRunesAlkanesChecked: true; isLowFee: boolean; isOpInRBF: boolean; inscriptions: [] };
 export class InsufficientSafeUtxosError extends Error {
   constructor(message: string) { super(message); this.name = "InsufficientSafeUtxosError"; }
@@ -178,8 +188,9 @@ export async function getSpendableUtxos(network: string, address: string, minimu
     })).filter((item): item is Record<string, unknown> & SpendableUtxo =>
       item.address === address && typeof item.txid === "string" && /^[a-f0-9]{64}$/i.test(item.txid) &&
       typeof item.vout === "number" && Number.isSafeInteger(item.vout) && item.vout >= 0 &&
-      typeof item.satoshi === "number" && Number.isSafeInteger(item.satoshi) && item.satoshi >= 600 &&
+      typeof item.satoshi === "number" && Number.isSafeInteger(item.satoshi) &&
       typeof item.scriptPk === "string" && /^(?:[a-f0-9]{2})+$/i.test(item.scriptPk) &&
+      item.satoshi >= minimumSpendableSatsForScript(item.scriptPk) &&
       typeof item.height === "number" && Number.isSafeInteger(item.height) && item.height > 0 &&
       item.inscriptionsRunesAlkanesChecked === true && typeof item.isLowFee === "boolean" && typeof item.isOpInRBF === "boolean" &&
       Array.isArray(item.inscriptions) && item.inscriptions.length === 0
