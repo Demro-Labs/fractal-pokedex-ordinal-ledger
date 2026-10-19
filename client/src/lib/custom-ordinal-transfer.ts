@@ -1,6 +1,7 @@
 import { Buffer } from "buffer";
 import * as bitcoin from "bitcoinjs-lib";
 import { LIVE_DATA_API_BASE } from "@/lib/live";
+import { minimumSpendableSatsForScript } from "@/lib/mempool";
 import {
   buildOrdinalTransferPsbt,
   extractAndVerifySignedOrdinalTransaction,
@@ -14,7 +15,6 @@ const PAGE_SIZE = 25;
 const MAX_UTXO_PAGES = 4;
 const MAX_FEE_UTXOS_TO_INSPECT = 100;
 const FETCH_TIMEOUT_MS = 10_000;
-const MIN_SPENDABLE_UTXO_SATS = 600;
 
 type UniSatUtxoPage = unknown;
 
