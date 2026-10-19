@@ -125,6 +125,16 @@ const SPENDABLE_UTXO_PAGE_SIZE = 25;
 // Bounded to 500 outputs per attempt; the Worker keeps its existing per-IP rate limit.
 const MAX_SPENDABLE_UTXO_PAGES = 20;
 
+function normalizeSatoshiValue(item: Record<string, unknown>): number | null {
+  const raw = item.satoshi !== undefined && item.satoshi !== null ? item.satoshi : item.value;
+  if (typeof raw === "number") return Number.isSafeInteger(raw) && raw >= 0 ? raw : null;
+  if (typeof raw === "string" && /^\\d+$/.test(raw)) {
+    const value = Number(raw);
+    return Number.isSafeInteger(value) && value >= 0 ? value : null;
+  }
+  return null;
+}
+
 /** Fetch confirmed, non-asset UTXOs; a historical RBF flag does not make a confirmed output replaceable. */
 export async function getSpendableUtxos(network: string, address: string, minimumSats: number, options: { mobile?: boolean; requiredOutpoints?: string[] } = {}): Promise<SpendableUtxo[]> {
   const chain = network === "BITCOIN_MAINNET" ? "bitcoin" : network === "FRACTAL_BITCOIN_MAINNET" ? "fractal" : null;
@@ -162,7 +172,10 @@ export async function getSpendableUtxos(network: string, address: string, minimu
     }
     scannedCount += pageScannedCount!;
     sourceTotal = total!;
-    const safe = page.utxo.filter((item): item is SpendableUtxo =>
+    const safe = page.utxo.map((item): Record<string, unknown> => ({
+      ...item,
+      satoshi: normalizeSatoshiValue(item),
+    })).filter((item): item is unknown as SpendableUtxo =>
       item.address === address && typeof item.txid === "string" && /^[a-f0-9]{64}$/i.test(item.txid) &&
       typeof item.vout === "number" && Number.isSafeInteger(item.vout) && item.vout >= 0 &&
       typeof item.satoshi === "number" && Number.isSafeInteger(item.satoshi) && item.satoshi >= 600 &&
