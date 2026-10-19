@@ -81,11 +81,12 @@ async function fetchAllAddressOrdinals(
   network: OrdinalNetwork,
   signal: AbortSignal | undefined,
   maxInscriptions: number,
+  limitDescription: string,
 ): Promise<AddressOrdinals> {
   if (!validAddress(address)) throw new Error("Invalid Local Vault address.");
   const first = await fetchOrdinalPage(address, network, 0, signal);
   if (first.total > maxInscriptions) {
-    throw new Error(`This Local Vault address has ${first.total} inscriptions. This view currently loads at most ${maxInscriptions} inscriptions per address; no transaction was signed.`);
+    throw new Error(`This Local Vault address has ${first.total} inscriptions. ${limitDescription}`);
   }
   if (first.detail.length !== Math.min(ORDINAL_PAGE_SIZE, first.total)) throw new Error("The Ordinals indexer returned an incomplete first page.");
   const detail = [...first.detail];
@@ -108,10 +109,10 @@ async function fetchAllAddressOrdinals(
 
 /** Complete, fail-closed index used by the local signer. Keep this cap conservative. */
 export function fetchAddressOrdinals(address: string, network: OrdinalNetwork, signal?: AbortSignal): Promise<AddressOrdinals> {
-  return fetchAllAddressOrdinals(address, network, signal, MAX_LOCAL_VAULT_INSCRIPTIONS);
+  return fetchAllAddressOrdinals(address, network, signal, MAX_LOCAL_VAULT_INSCRIPTIONS, `The safe local signer currently verifies at most ${MAX_LOCAL_VAULT_INSCRIPTIONS} inscriptions per address; no transaction was signed.`);
 }
 
 /** Complete paginated listing for the read-only Vault UI, independent of the signer's lower safety cap. */
 export function fetchAddressOrdinalsForDisplay(address: string, network: OrdinalNetwork, signal?: AbortSignal): Promise<AddressOrdinals> {
-  return fetchAllAddressOrdinals(address, network, signal, MAX_DISPLAY_INSCRIPTIONS);
+  return fetchAllAddressOrdinals(address, network, signal, MAX_DISPLAY_INSCRIPTIONS, `The read-only Local Vault view currently loads at most ${MAX_DISPLAY_INSCRIPTIONS} inscriptions per address.`);
 }
