@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { RefreshCw, Send, ShieldCheck } from "lucide-react";
 import { LocalVaultOwnershipProof } from "@/components/LocalVaultOwnershipProof";
 import { LocalVaultRuneTransferPanel } from "@/components/LocalVaultRuneTransferPanel";
-import { fetchAddressOrdinals, type AddressOrdinal, type OrdinalNetwork } from "@/lib/ordinals";
+import { fetchAddressOrdinalsForDisplay, type AddressOrdinal, type OrdinalNetwork } from "@/lib/ordinals";
 import { broadcastLocalOrdinalTransfer, prepareLocalOrdinalTransfer, signLocalOrdinalTransfer, type LocalOrdinalPlan } from "@/lib/local-ordinal-transfer";
 import type { AddressType, OrdiWalletRecord } from "@/lib/ordi-wallet";
 type SiteName = "punks" | "pokedex";
@@ -22,6 +22,8 @@ export function LocalVaultAssetPanel({
   addressType: AddressType;
 }) {
   const [items, setItems] = useState<AddressOrdinal[]>([]);
+  const [total, setTotal] = useState(0);
+  const requestController = useRef<AbortController | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [selected, setSelected] = useState("");
@@ -36,21 +38,32 @@ export function LocalVaultAssetPanel({
   const [message, setMessage] = useState("");
   const [ownershipProofKey, setOwnershipProofKey] = useState<string | null>(null);
   const load = async () => {
+    requestController.current?.abort();
+    const controller = new AbortController();
+    requestController.current = controller;
     setLoading(true);
     setError("");
     try {
-      const result = await fetchAddressOrdinals(address, network);
+      const result = await fetchAddressOrdinalsForDisplay(address, network, controller.signal);
+      if (controller.signal.aborted) return;
       setItems(result.detail);
+      setTotal(result.total);
       if (selected && !result.detail.some(item => item.inscriptionId === selected)) setSelected("");
     } catch (cause) {
+      if (controller.signal.aborted) return;
       setError(cause instanceof Error ? cause.message : "Live Ordinals data is unavailable.");
-    } finally { setLoading(false); }
+    } finally {
+      if (requestController.current === controller) {
+        requestController.current = null;
+        setLoading(false);
+      }
+    }
   };
   useEffect(() => {
-    setItems([]); setSelected(""); setRecipient(""); setLocalPlan(null); setSigned(null);
+    setItems([]); setTotal(0); setSelected(""); setRecipient(""); setLocalPlan(null); setSigned(null);
     void load();
     const timer = window.setInterval(() => void load(), 300_000);
-    return () => window.clearInterval(timer);
+    return () => { window.clearInterval(timer); requestController.current?.abort(); };
   }, [address, network]);
   const selectedItem = useMemo(() => items.find(item => item.inscriptionId === selected) ?? null, [items, selected]);
   const ownershipContextKey = selectedItem && recipient.trim()
@@ -93,7 +106,7 @@ export function LocalVaultAssetPanel({
     </div>
     {error && <div className="mt-3 break-words border border-[#a45e54]/50 bg-[#a45e54]/10 p-3 font-mono text-[10px] leading-5 text-[#e6a69b]" role="alert"><p>{error}</p><p className="mt-2 text-[#d9d3c6]">Index live indisponible. La signature locale est bloquée jusqu’au rétablissement des données complètes.</p></div>}
     <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_1fr]">
-      <article className="min-w-0 border border-[#2c323a] bg-[#0b0f13] p-3"><div className="flex items-center justify-between"><h3 className="font-mono text-[10px] uppercase text-[#f2bd63]">Ordinals / inscriptions</h3><span className="font-mono text-[9px] text-[#718092]">{items.length}</span></div>{!loading && !error && items.length === 0 && <p className="mt-2 font-mono text-[10px] text-[#718092]">No indexed inscriptions for this vault address.</p>}{items.length > 0 && <div className="mt-2 max-h-64 space-y-2 overflow-y-auto">{items.map(item => <div key={item.inscriptionId} className={`border p-2 ${selected === item.inscriptionId ? "border-[#f2bd63]" : "border-[#2c323a]"}`}><p className="break-all font-mono text-[9px] text-[#d9d3c6]">{item.inscriptionNumber != null ? `#${item.inscriptionNumber} · ` : ""}{item.inscriptionId}</p><p className="mt-1 break-all font-mono text-[9px] text-[#718092]">{item.location ?? "Location unavailable"}</p><button type="button" onClick={() => chooseInscription(item)} disabled={!item.location || busy} className="mt-2 inline-flex min-h-9 items-center gap-1 border border-[#d99a54] px-2 font-mono text-[9px] uppercase text-[#f2bd63] disabled:opacity-40"><Send size={11} /> Select for local transfer</button></div>)}</div>}</article>
+      <article className="min-w-0 border border-[#2c323a] bg-[#0b0f13] p-3"><div className="flex items-center justify-between"><h3 className="font-mono text-[10px] uppercase text-[#f2bd63]">Ordinals / inscriptions</h3><span className="font-mono text-[9px] text-[#718092]">{items.length} / {total} indexed</span></div>{!loading && !error && items.length === 0 && <p className="mt-2 font-mono text-[10px] text-[#718092]">No indexed inscriptions for this vault address.</p>}{items.length > 0 && <div className="mt-2 max-h-64 space-y-2 overflow-y-auto">{items.map(item => <div key={item.inscriptionId} className={`border p-2 ${selected === item.inscriptionId ? "border-[#f2bd63]" : "border-[#2c323a]"}`}><p className="break-all font-mono text-[9px] text-[#d9d3c6]">{item.inscriptionNumber != null ? `#${item.inscriptionNumber} · ` : ""}{item.inscriptionId}</p><p className="mt-1 break-all font-mono text-[9px] text-[#718092]">{item.location ?? "Location unavailable"}</p><button type="button" onClick={() => chooseInscription(item)} disabled={!item.location || busy} className="mt-2 inline-flex min-h-9 items-center gap-1 border border-[#d99a54] px-2 font-mono text-[9px] uppercase text-[#f2bd63] disabled:opacity-40"><Send size={11} /> Select for local transfer</button></div>)}</div>}</article>
       <LocalVaultRuneTransferPanel wallet={wallet} network={network} addressType={addressType} site={site} onDone={() => void load()} />
     </div>
     {selectedItem && <div className="mt-3 border border-[#d99a54]/40 bg-[#10151a] p-3 sm:p-4" aria-labelledby="local-ordinal-transfer-title">
