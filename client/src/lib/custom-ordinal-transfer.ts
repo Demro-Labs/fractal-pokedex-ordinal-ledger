@@ -231,7 +231,7 @@ async function loadIndexedSpendableRefs(
         !Number.isSafeInteger(vout) ||
         vout < 0 ||
         !Number.isSafeInteger(valueSats) ||
-        valueSats < MIN_SPENDABLE_UTXO_SATS ||
+        valueSats < minimumSpendableSatsForScript(scriptHex) ||
         !/^(?:[a-f0-9]{2})+$/i.test(scriptHex) ||
         !Number.isSafeInteger(item.height) ||
         Number(item.height) <= 0 ||
