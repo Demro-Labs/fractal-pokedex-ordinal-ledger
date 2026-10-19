@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ExternalLink, RefreshCw } from "lucide-react";
 import type { OrdiNetwork } from "@/lib/ordi-wallet";
 import { LIVE_DATA_API_BASE } from "@/lib/live";
+import { minimumSpendableSatsForScript } from "@/lib/mempool";
 type ActiveUtxo = { txid: string; vout: number; satoshi: number; height: number | null; scriptPk: string | null; inscriptions: string[] | null; isSpent: boolean | null };
 type UtxoPage = { chain: string; address: string; cursor: number; nextCursor: number; total: number; scannedCount: number; utxo: ActiveUtxo[] };
 const PAGE_SIZE = 25, MAX_UTXOS = 500;
@@ -47,7 +48,7 @@ export function LocalVaultActiveUtxosPanel({ address, network }: { address: stri
   const visible = useMemo(() => items.slice(pageIndex * PAGE_SIZE, (pageIndex + 1) * PAGE_SIZE), [items, pageIndex]);
   const explorer = network === "BITCOIN_MAINNET" ? "https://mempool.space" : "https://mempool.fractalbitcoin.io";
   const label = network === "BITCOIN_MAINNET" ? "BTC" : "FB";
-  const safeTotal = items.filter(item => item.isSpent === false && (item.height ?? 0) > 0 && item.satoshi >= 600 && Array.isArray(item.inscriptions) && item.inscriptions.length === 0 && Boolean(item.scriptPk)).reduce((sum, item) => sum + item.satoshi, 0);
+  const safeTotal = items.filter(item => item.isSpent === false && (item.height ?? 0) > 0 && item.satoshi >= minimumSpendableSatsForScript(item.scriptPk ?? "") && Array.isArray(item.inscriptions) && item.inscriptions.length === 0 && Boolean(item.scriptPk)).reduce((sum, item) => sum + item.satoshi, 0);
   return <section className="mt-3 border border-[#70c7a0]/40 bg-[#0e1513] p-3 sm:p-4" aria-labelledby="active-utxos-title">
     <div className="flex flex-wrap items-center justify-between gap-3"><div><h4 id="active-utxos-title" className="font-mono text-[10px] uppercase tracking-[.13em] text-[#9fe0bd]">Active UTXOs · {label}</h4><p className="mt-1 font-mono text-[9px] leading-4 text-[#718092]">Jusqu’à 500 sorties · pages de 25 · adresse active</p></div><button type="button" onClick={() => void refresh()} disabled={busy} className="inline-flex min-h-10 items-center gap-2 border border-[#3b434d] px-3 font-mono text-[9px] uppercase text-[#d9d3c6] hover:border-[#70c7a0] disabled:opacity-50"><RefreshCw size={12} className={busy ? "animate-spin" : ""} /> Actualiser</button></div>
     <div className="mt-3 grid gap-2 sm:grid-cols-3"><div className="border border-[#2c323a] bg-[#10151a] p-2"><p className="font-mono text-[8px] uppercase text-[#718092]">Lignes récupérées</p><p className="mt-1 font-display text-lg text-[#f3efe5]">{items.length}{sourceTotal !== null ? ` / ${Math.min(sourceTotal, MAX_UTXOS)}` : ""}</p></div><div className="border border-[#2c323a] bg-[#10151a] p-2"><p className="font-mono text-[8px] uppercase text-[#718092]">Total indexeur</p><p className="mt-1 font-display text-lg text-[#f3efe5]">{sourceTotal === null ? "—" : sourceTotal.toLocaleString("fr-FR")}</p></div><div className="border border-[#2c323a] bg-[#10151a] p-2"><p className="font-mono text-[8px] uppercase text-[#718092]">Candidats indicatifs sans inscription</p><p className="mt-1 font-display text-lg text-[#f3efe5]">{safeTotal.toLocaleString("fr-FR")} sats</p></div></div>
