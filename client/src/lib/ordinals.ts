@@ -40,10 +40,23 @@ function normalize(value: unknown): AddressOrdinal | null {
 
 const ORDINAL_PAGE_SIZE = 50;
 const MAX_LOCAL_VAULT_INSCRIPTIONS = 1_000;
+const MAX_DISPLAY_INSCRIPTIONS = 10_000;
 const PAGE_DELAY_MS = 250;
 
-function waitForNextPage() {
-  return new Promise(resolve => window.setTimeout(resolve, PAGE_DELAY_MS));
+function waitForNextPage(signal?: AbortSignal): Promise<void> {
+  if (signal?.aborted) return Promise.reject(new DOMException("The Ordinals lookup was cancelled.", "AbortError"));
+  return new Promise((resolve, reject) => {
+    const timer = globalThis.setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, PAGE_DELAY_MS);
+    const onAbort = () => {
+      globalThis.clearTimeout(timer);
+      signal?.removeEventListener("abort", onAbort);
+      reject(new DOMException("The Ordinals lookup was cancelled.", "AbortError"));
+    };
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
 }
 
 async function fetchOrdinalPage(address: string, network: OrdinalNetwork, start: number, signal?: AbortSignal) {
@@ -63,17 +76,22 @@ async function fetchOrdinalPage(address: string, network: OrdinalNetwork, start:
   return { total: payload.total as number, detail: detail as AddressOrdinal[], refreshedAt: typeof payload.refreshedAt === "string" ? payload.refreshedAt : new Date().toISOString() };
 }
 
-export async function fetchAddressOrdinals(address: string, network: OrdinalNetwork, signal?: AbortSignal): Promise<AddressOrdinals> {
+async function fetchAllAddressOrdinals(
+  address: string,
+  network: OrdinalNetwork,
+  signal: AbortSignal | undefined,
+  maxInscriptions: number,
+): Promise<AddressOrdinals> {
   if (!validAddress(address)) throw new Error("Invalid Local Vault address.");
   const first = await fetchOrdinalPage(address, network, 0, signal);
-  if (first.total > MAX_LOCAL_VAULT_INSCRIPTIONS) {
-    throw new Error(`This Local Vault address has ${first.total} inscriptions. The safe local signer currently verifies at most ${MAX_LOCAL_VAULT_INSCRIPTIONS} inscriptions per address; no transaction was signed.`);
+  if (first.total > maxInscriptions) {
+    throw new Error(`This Local Vault address has ${first.total} inscriptions. This view currently loads at most ${maxInscriptions} inscriptions per address; no transaction was signed.`);
   }
   if (first.detail.length !== Math.min(ORDINAL_PAGE_SIZE, first.total)) throw new Error("The Ordinals indexer returned an incomplete first page.");
   const detail = [...first.detail];
   for (let start = ORDINAL_PAGE_SIZE; start < first.total; start += ORDINAL_PAGE_SIZE) {
     if (signal?.aborted) throw new DOMException("The Ordinals lookup was cancelled.", "AbortError");
-    await waitForNextPage();
+    await waitForNextPage(signal);
     const page = await fetchOrdinalPage(address, network, start, signal);
     if (page.total !== first.total || page.detail.length !== Math.min(ORDINAL_PAGE_SIZE, first.total - start)) {
       throw new Error("The Ordinals index changed or returned an incomplete page during local verification. Refresh and retry.");
@@ -86,4 +104,14 @@ export async function fetchAddressOrdinals(address: string, network: OrdinalNetw
     ids.add(item.inscriptionId);
   }
   return { network, address, start: 0, total: first.total, detail, refreshedAt: new Date().toISOString() };
+}
+
+/** Complete, fail-closed index used by the local signer. Keep this cap conservative. */
+export function fetchAddressOrdinals(address: string, network: OrdinalNetwork, signal?: AbortSignal): Promise<AddressOrdinals> {
+  return fetchAllAddressOrdinals(address, network, signal, MAX_LOCAL_VAULT_INSCRIPTIONS);
+}
+
+/** Complete paginated listing for the read-only Vault UI, independent of the signer's lower safety cap. */
+export function fetchAddressOrdinalsForDisplay(address: string, network: OrdinalNetwork, signal?: AbortSignal): Promise<AddressOrdinals> {
+  return fetchAllAddressOrdinals(address, network, signal, MAX_DISPLAY_INSCRIPTIONS);
 }
