@@ -128,7 +128,7 @@ const MAX_SPENDABLE_UTXO_PAGES = 20;
 function normalizeSatoshiValue(item: Record<string, unknown>): number | null {
   const raw = item.satoshi !== undefined && item.satoshi !== null ? item.satoshi : item.value;
   if (typeof raw === "number") return Number.isSafeInteger(raw) && raw >= 0 ? raw : null;
-  if (typeof raw === "string" && /^\d+$.test(raw)) {
+  if (typeof raw === "string" && /^\d+$/.test(raw)) {
     const value = Number(raw);
     return Number.isSafeInteger(value) && value >= 0 ? value : null;
   }
