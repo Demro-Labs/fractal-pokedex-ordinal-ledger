@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { LIVE_DATA_API_BASE } from "@/lib/live";
-import { confirmFractalSpendableUtxos, getMempoolConfig, getSpendableUtxos, InsufficientSafeUtxosError, trackMempoolTransaction } from "./mempool";
+import { confirmFractalSpendableUtxos, getMempoolConfig, getMempoolRawTransaction, getRecommendedFeeEstimate, getSpendableUtxos, InsufficientSafeUtxosError, trackMempoolTransaction } from "./mempool";
 
 const ADDRESS = "bc1qtestaddress0000000000000000000000000";
 const SAFE_UTXO = {
@@ -152,6 +152,50 @@ describe("trackMempoolTransaction network routing", () => {
     await expect(trackMempoolTransaction("b".repeat(64), "UNKNOWN_NETWORK"))
       .rejects.toThrow(/No Mempool endpoint/i);
     expect(getMempoolConfig("UNKNOWN_NETWORK")).toBeUndefined();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("Mempool fee fallback and Legacy transaction routing", () => {
+  it.each([
+    { network: "BITCOIN_MAINNET", endpoint: "https://mempool.space" },
+    { network: "FRACTAL_BITCOIN_MAINNET", endpoint: "https://mempool.fractalbitcoin.io" },
+  ])("falls back to the selected $network Mempool for current fees", async ({ network, endpoint }) => {
+    installBrowserTimerMocks();
+    const urls: string[] = [];
+    vi.stubGlobal("fetch", (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      urls.push(url);
+      if (new URL(url).pathname === "/api/fees/recommended") return Response.json({ error: "Worker unavailable" }, { status: 503 });
+      return Response.json({ halfHourFee: 3, fastestFee: 5, minimumFee: 1 });
+    }) as typeof fetch);
+    const estimate = await getRecommendedFeeEstimate(network);
+    expect(estimate).toMatchObject({ network, feeRate: 3, strategy: "single-provider-fallback", sources: { mempool: { feeRate: 3, available: true }, unisat: { feeRate: null, available: false } } });
+    expect(urls).toHaveLength(2);
+    expect(urls[1]).toBe(`${endpoint}/api/v1/fees/recommended`);
+  });
+
+  it.each([
+    { network: "BITCOIN_MAINNET", endpoint: "https://mempool.space" },
+    { network: "FRACTAL_BITCOIN_MAINNET", endpoint: "https://mempool.fractalbitcoin.io" },
+  ])("fetches Legacy parent hex from the matching $network Mempool", async ({ network, endpoint }) => {
+    installBrowserTimerMocks();
+    const txid = "c".repeat(64);
+    const rawHex = "02000000";
+    const urls: string[] = [];
+    vi.stubGlobal("fetch", (async (input: RequestInfo | URL) => {
+      urls.push(String(input));
+      return new Response(rawHex, { status: 200, headers: { "Content-Type": "text/plain" } });
+    }) as typeof fetch);
+    await expect(getMempoolRawTransaction(network, txid)).resolves.toBe(rawHex);
+    expect(urls).toEqual([`${endpoint}/api/tx/${txid}/hex`]);
+  });
+
+  it("rejects an unknown network instead of routing Legacy inputs to the wrong chain", async () => {
+    installBrowserTimerMocks();
+    const fetchMock = vi.fn(async () => new Response("aa", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock as typeof fetch);
+    await expect(getMempoolRawTransaction("UNKNOWN_NETWORK", "c".repeat(64))).rejects.toThrow(/No Mempool endpoint/i);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
