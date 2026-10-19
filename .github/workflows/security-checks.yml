@@ -36,6 +36,9 @@ jobs:
       - name: Type-check
         run: pnpm check
 
+      - name: Run client unit tests
+        run: pnpm exec vitest run client/src/lib
+
       - name: Audit all dependencies
         run: pnpm audit --audit-level=low
 
