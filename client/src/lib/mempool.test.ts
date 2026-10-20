@@ -267,7 +267,8 @@ describe("confirmFractalSpendableUtxos", () => {
 
 describe("confirmSpendableUtxos network routing", () => {
   it("sends Bitcoin Local Vault confirmation to the Worker with the Bitcoin chain key", async () => {
-    installWindowAndFetch(async (input, init = {}) => {
+    installBrowserTimerMocks();
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL, init: RequestInit = {}) => {
       expect(String(input)).toBe(`${LIVE_DATA_API_BASE}/api/spendable-utxos/confirm`);
       const body = JSON.parse(String(init.body));
       expect(body).toMatchObject({ chain: "bitcoin", address: ADDRESS, minimumSats: 10_400 });
