@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { LIVE_DATA_API_BASE } from "@/lib/live";
-import { confirmFractalSpendableUtxos, getMempoolConfig, getMempoolRawTransaction, getRecommendedFeeEstimate, getSpendableUtxos, InsufficientSafeUtxosError, minimumSpendableSatsForScript, trackMempoolTransaction, validateMempoolAddress } from "./mempool";
+import { confirmFractalSpendableUtxos, confirmSpendableUtxos, getMempoolConfig, getMempoolRawTransaction, getRecommendedFeeEstimate, getSpendableUtxos, InsufficientSafeUtxosError, minimumSpendableSatsForScript, trackMempoolTransaction, validateMempoolAddress } from "./mempool";
 
 const ADDRESS = "bc1qtestaddress0000000000000000000000000";
 const SAFE_UTXO = {
@@ -262,6 +262,20 @@ describe("confirmFractalSpendableUtxos", () => {
     vi.stubGlobal("fetch", (async () => Response.json({ chain: "fractal", address: ADDRESS, minimumSats: 20_500, safeSats: 18_000, sufficient: false, verifiedUtxoCount: 1, confirmedAt: new Date().toISOString() })) as typeof fetch);
     await expect(confirmFractalSpendableUtxos(ADDRESS, 20_500, [{ txid: "a".repeat(64), vout: 1, satoshi: 18_000, scriptPk: SAFE_UTXO.scriptPk }]))
       .rejects.toBeInstanceOf(InsufficientSafeUtxosError);
+  });
+});
+
+describe("confirmSpendableUtxos network routing", () => {
+  it("sends Bitcoin Local Vault confirmation to the Worker with the Bitcoin chain key", async () => {
+    installBrowserTimerMocks();
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL, init: RequestInit = {}) => {
+      expect(String(input)).toBe(`${LIVE_DATA_API_BASE}/api/spendable-utxos/confirm`);
+      const body = JSON.parse(String(init.body));
+      expect(body).toMatchObject({ chain: "bitcoin", address: ADDRESS, minimumSats: 10_400 });
+      return Response.json({ chain: "bitcoin", address: ADDRESS, minimumSats: 10_400, safeSats: 10_500, sufficient: true, verifiedUtxoCount: 1, confirmedAt: new Date().toISOString() });
+    });
+    const result = await confirmSpendableUtxos("BITCOIN_MAINNET", ADDRESS, 10_400, [{ txid: "a".repeat(64), vout: 0, satoshi: 10_500, scriptPk: "0014" + "11".repeat(20) }]);
+    expect(result).toMatchObject({ chain: "bitcoin", sufficient: true, safeSats: 10_500 });
   });
 });
 
