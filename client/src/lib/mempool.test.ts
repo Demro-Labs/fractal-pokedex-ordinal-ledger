@@ -53,7 +53,7 @@ describe("validateMempoolAddress", () => {
 });
 
 describe("getSpendableUtxos", () => {
-  it("scans the full 500-output window by default even when the first UTXO covers the minimum", async () => {
+  it("scans the full indexer-reported set by default even when the first UTXO covers the minimum", async () => {
     const cursors: number[] = [];
     installBrowserTimerMocks();
     vi.stubGlobal("fetch", (async (input: RequestInfo | URL) => {
@@ -107,7 +107,7 @@ describe("getSpendableUtxos", () => {
     expect(result[0].satoshi).toBe(600_000);
   });
 
-  it("finds a confirmed low-fee RBF-marked output through the bounded 500-output scan", async () => {
+  it("finds a confirmed low-fee RBF-marked output through the full 500-output index", async () => {
     installBrowserTimerMocks();
     const cursors: number[] = [];
     vi.stubGlobal("fetch", (async (input: RequestInfo | URL) => {
@@ -154,21 +154,35 @@ describe("getSpendableUtxos", () => {
     expect(result.reduce((sum, item) => sum + item.satoshi, 0)).toBe(1_092);
   });
 
-  it("fails closed when collectAll reaches the 500-output cap before the index is exhausted", async () => {
+  it("continues collectAll beyond 500 outputs until the indexer total is exhausted", async () => {
     installBrowserTimerMocks();
-    let calls = 0;
+    const cursors: number[] = [];
     vi.stubGlobal("fetch", (async (input: RequestInfo | URL) => {
       const cursor = Number(new URL(String(input)).searchParams.get("cursor"));
-      calls += 1;
+      cursors.push(cursor);
+      const scannedCount = Math.min(25, 501 - cursor);
       return Response.json({
-        chain: "fractal", address: ADDRESS, cursor, nextCursor: cursor + 25, total: 501, scannedCount: 25, utxo: [],
+        chain: "fractal", address: ADDRESS, cursor, nextCursor: cursor + scannedCount, total: 501, scannedCount,
+        utxo: cursor === 500 ? [SAFE_UTXO] : [],
       });
     }) as typeof fetch);
 
-    await expect(getSpendableUtxos("FRACTAL_BITCOIN_MAINNET", ADDRESS, 1, { collectAll: true }))
-      .rejects.toThrow(/scan is incomplete.*500 of 501/i);
-    expect(calls).toBe(20);
+    const result = await getSpendableUtxos("FRACTAL_BITCOIN_MAINNET", ADDRESS, 1, { collectAll: true });
+    expect(cursors).toHaveLength(21);
+    expect(cursors.at(-1)).toBe(500);
+    expect(result).toEqual([SAFE_UTXO]);
   });
+
+  it("fails closed when the indexer stops advancing before its reported total", async () => {
+    installBrowserTimerMocks();
+    vi.stubGlobal("fetch", (async () => Response.json({
+      chain: "fractal", address: ADDRESS, cursor: 0, nextCursor: 0, total: 26, scannedCount: 0, utxo: [],
+    })) as typeof fetch);
+
+    await expect(getSpendableUtxos("FRACTAL_BITCOIN_MAINNET", ADDRESS, 1, { collectAll: true }))
+      .rejects.toThrow(/scan is incomplete.*0 of 26/i);
+  });
+
   it("keeps scanning until the exact PSBT outpoint is verified", async () => {
     installBrowserTimerMocks();
     const cursors: number[] = [];
