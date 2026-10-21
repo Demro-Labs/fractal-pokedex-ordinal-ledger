@@ -43,6 +43,9 @@ jobs:
       - name: Run client unit tests
         run: pnpm exec vitest run client/src/lib
 
+      - name: Run Local Vault UTXO safety tests
+        run: pnpm exec vitest run client/src/lib/protocol-utxo-safety.test.ts
+
       - name: Audit dependencies
         run: pnpm audit --audit-level=low
 
