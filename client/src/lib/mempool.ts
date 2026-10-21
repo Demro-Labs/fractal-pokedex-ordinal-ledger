@@ -222,7 +222,7 @@ export async function scanAddressUtxoInventory(network: string, address: string,
     });
     if (!rowsValid) throw new Error("Une sortie de l’inventaire UTXO est absente, dupliquée ou mal formée; le scan complet est refusé.");
 
-    for (const outpoint of pageOutpoints) seenInventoryOutpoints.add(outpoint);
+    pageOutpoints.forEach(outpoint => seenInventoryOutpoints.add(outpoint));
     const confirmedPageCount = pageScannedCount!;
     const confirmedNextCursor = nextCursor!;
     const confirmedTotal = pageTotal!;
