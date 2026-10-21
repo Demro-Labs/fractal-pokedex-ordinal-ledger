@@ -110,6 +110,7 @@ describe("getSpendableUtxos", () => {
   it("finds a confirmed low-fee RBF-marked output through the full 500-output index", async () => {
     installBrowserTimerMocks();
     const cursors: number[] = [];
+    const progress: Array<{ scannedCount: number; totalCount: number; safeUtxoCount: number }> = [];
     vi.stubGlobal("fetch", (async (input: RequestInfo | URL) => {
       const url = new URL(String(input));
       expect(url.origin).toBe(new URL(LIVE_DATA_API_BASE).origin);
@@ -127,11 +128,13 @@ describe("getSpendableUtxos", () => {
       });
     }) as typeof fetch);
 
-    const result = await getSpendableUtxos("FRACTAL_BITCOIN_MAINNET", ADDRESS, 143_744);
+    const result = await getSpendableUtxos("FRACTAL_BITCOIN_MAINNET", ADDRESS, 143_744, { onProgress: scan => progress.push(scan) });
 
     expect(cursors).toHaveLength(20);
     expect(cursors[0]).toBe(0);
     expect(cursors.at(-1)).toBe(475);
+    expect(progress).toHaveLength(20);
+    expect(progress.at(-1)).toEqual({ scannedCount: 500, totalCount: 500, safeUtxoCount: 1 });
     expect(result).toEqual([{ ...SAFE_UTXO, sourceCursor: 475 }]);
     expect(result[0].isOpInRBF).toBe(true);
     expect(result[0].isLowFee).toBe(true);
