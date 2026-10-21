@@ -179,7 +179,7 @@ describe("getSpendableUtxos", () => {
       chain: "fractal", address: ADDRESS, cursor: 0, nextCursor: 0, total: 26, scannedCount: 0, utxo: [],
     })) as typeof fetch);
 
-    await expect(getSpendableUtxos("FRACTAL_BITCOIN_MAINNET", ADDRESS, 1, { collectAll: true }))
+    await expect(getSpendableUtxos("FRACTAL_BITCOIN_MAINNET", ADDRESS, 1, { collectAll: true, allowInsufficientSafeBalance: true }))
       .rejects.toThrow(/scan is incomplete.*0 of 26/i);
   });
 
@@ -255,6 +255,17 @@ describe("getSpendableUtxos", () => {
     const error = await getSpendableUtxos("FRACTAL_BITCOIN_MAINNET", ADDRESS, 143_744).catch(value => value);
     expect(error).toBeInstanceOf(InsufficientSafeUtxosError);
     expect(error).toHaveProperty("message", expect.stringMatching(/0 sats.*0 safe UTXOs.*500\/500.*No payment was started/));
+  });
+
+  it("returns an empty safe set for a complete balance scan with zero fee-safe UTXOs", async () => {
+    installBrowserTimerMocks();
+    vi.stubGlobal("fetch", (async () => Response.json({
+      chain: "fractal", address: ADDRESS, cursor: 0, nextCursor: 0, total: 0, scannedCount: 0, utxo: [],
+    })) as typeof fetch);
+
+    await expect(getSpendableUtxos("FRACTAL_BITCOIN_MAINNET", ADDRESS, 1, {
+      collectAll: true, allowInsufficientSafeBalance: true,
+    })).resolves.toEqual([]);
   });
 });
 
