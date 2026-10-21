@@ -177,7 +177,13 @@ export async function reviewLocalPsbt(psbtHex: string, wallet: OrdiWalletRecord,
     inputs.push({ ...outpoint, valueSats, scriptHex });
   }
   if (!addressType || !sourceAddress || !Number.isSafeInteger(inputSats)) throw new Error("Impossible de déterminer le compte source du PSBT.");
-  await verifyInputs(network, sourceAddress, inputs, inputSats);
+  try {
+    await verifyInputs(network, sourceAddress, inputs, inputSats);
+  } catch (cause) {
+    const outpoints = inputs.map(input => `${input.txid}:${input.vout} (${input.valueSats} sats)`).join(", ");
+    const reason = cause instanceof Error ? cause.message : "Motif de vérification UTXO inconnu.";
+    throw new Error(`Vérification UTXO échouée sur ${network}. Entrées PSBT à diagnostiquer : ${outpoints}. Motif : ${reason} Aucune signature ni diffusion n’a été effectuée.`);
+  }
 
   const outputs: ReviewedOutput[] = [];
   for (const output of psbt.txOutputs) {
