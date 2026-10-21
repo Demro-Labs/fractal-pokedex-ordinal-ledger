@@ -172,7 +172,7 @@ export async function signLocalRuneTransfer(plan: LocalRuneTransferPlan, wallet:
   await assertCurrent(plan);
   const psbt=bitcoin.Psbt.fromHex(plan.psbtHex,{network:NET}), signer=signerFor(wallet.addresses[plan.addressType],plan.addressType);
   psbt.data.inputs.forEach((input,i)=>{ if(input.partialSig?.length||input.tapKeySig||input.tapScriptSig?.length) throw new Error("PSBT already contains signatures."); psbt.signInput(i,signer,plan.addressType==="taproot"?[bitcoin.Transaction.SIGHASH_DEFAULT,bitcoin.Transaction.SIGHASH_ALL]:[bitcoin.Transaction.SIGHASH_ALL]); });
-  const verify=plan.addressType==="taproot"?(key:Uint8Array,h:Uint8Array,s:Uint8Array)=>ecc.verifySchnorr(h,key,s):(key:Uint8Array,h:Uint8Array,s:Uint8Array)=>ecc.verify(h,key,s);
+  const verify=plan.addressType==="taproot"?(key:Uint8Array,h:Uint8Array,s:Uint8Array)=>ecc.verifySchnorr(Buffer.from(h),Buffer.from(key),Buffer.from(s)):(key:Uint8Array,h:Uint8Array,s:Uint8Array)=>ecc.verify(Buffer.from(h),Buffer.from(key),Buffer.from(s));
   try { psbt.validateSignaturesOfAllInputs(verify); psbt.finalizeAllInputs(); } catch { throw new Error("Local Rune PSBT signature validation failed."); }
   const rawTxHex=psbt.extractTransaction(true).toHex(), tx=validateTx(rawTxHex,plan);
   return {rawTxHex,txid:tx.getId().toLowerCase()};
