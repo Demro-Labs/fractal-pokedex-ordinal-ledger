@@ -51,13 +51,13 @@ async function allRuneUtxos(address: string, network: OrdiNetwork, runeid: strin
 function signerFor(account: OrdiWalletRecord["addresses"][AddressType], type: AddressType) {
   const pub = Buffer.from(account.publicKey, "hex"), priv = Buffer.from(account.privateKey, "hex");
   if (pub.length !== 33 || priv.length !== 32 || !ecc.isPrivate(priv) || !Buffer.from(ecc.pointFromScalar(priv, true) ?? []).equals(pub)) throw new Error("Local private key does not match the selected account.");
-  if (type !== "taproot") return { publicKey: pub, sign: (h: Uint8Array) => Buffer.from(ecc.sign(h, priv)) };
-  const adjusted = pub[0] === 3 ? Buffer.from(ecc.privateNegate(priv)) : priv;
+  if (type !== "taproot") return { publicKey: pub, sign: (h: Uint8Array) => Buffer.from(ecc.sign(Buffer.from(h), Buffer.from(priv))) };
+  const adjusted = pub[0] === 3 ? Buffer.from(ecc.privateNegate(Buffer.from(priv))) : priv;
   const tweaked = ecc.privateAdd(adjusted, bitcoin.crypto.taggedHash("TapTweak", bitcoin.toXOnly(pub)));
   if (!tweaked) throw new Error("Taproot key tweak failed.");
   const tweakedPub = ecc.pointFromScalar(tweaked, true);
   if (!tweakedPub) throw new Error("Taproot public key derivation failed.");
-  return { publicKey: Buffer.from(tweakedPub), sign: (h: Uint8Array) => Buffer.from(ecc.sign(h, tweaked)), signSchnorr: (h: Uint8Array) => Buffer.from(ecc.signSchnorr(h, tweaked)) };
+  return { publicKey: Buffer.from(tweakedPub), sign: (h: Uint8Array) => Buffer.from(ecc.sign(Buffer.from(h), Buffer.from(tweaked))), signSchnorr: (h: Uint8Array) => Buffer.from(ecc.signSchnorr(Buffer.from(h), Buffer.from(tweaked))) };
 }
 function addInput(psbt: bitcoin.Psbt, item: { txid: string; vout: number; satoshi: number; scriptPk: string; rawTx?: string }, type: AddressType, pub: Buffer) {
   const base = { hash: item.txid, index: item.vout, sequence: 0xfffffffd };
