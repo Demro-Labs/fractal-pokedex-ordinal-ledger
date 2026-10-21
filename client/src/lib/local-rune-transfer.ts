@@ -53,7 +53,9 @@ function signerFor(account: OrdiWalletRecord["addresses"][AddressType], type: Ad
   if (pub.length !== 33 || priv.length !== 32 || !ecc.isPrivate(priv) || !Buffer.from(ecc.pointFromScalar(priv, true) ?? []).equals(pub)) throw new Error("Local private key does not match the selected account.");
   if (type !== "taproot") return { publicKey: pub, sign: (h: Uint8Array) => Buffer.from(ecc.sign(Buffer.from(h), Buffer.from(priv))) };
   const adjusted = pub[0] === 3 ? Buffer.from(ecc.privateNegate(Buffer.from(priv))) : priv;
-  const tweaked = ecc.privateAdd(adjusted, bitcoin.crypto.taggedHash("TapTweak", bitcoin.toXOnly(pub)));
+  // Normalize bitcoinjs-lib v7 Uint8Array outputs at the secp256k1 adapter boundary.
+  const tapTweak = Buffer.from(bitcoin.crypto.taggedHash("TapTweak", Buffer.from(bitcoin.toXOnly(pub))));
+  const tweaked = ecc.privateAdd(Buffer.from(adjusted), Buffer.from(tapTweak));
   if (!tweaked) throw new Error("Taproot key tweak failed.");
   const tweakedPub = ecc.pointFromScalar(tweaked, true);
   if (!tweakedPub) throw new Error("Taproot public key derivation failed.");
