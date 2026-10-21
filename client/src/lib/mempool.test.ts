@@ -457,10 +457,11 @@ describe("scanAddressUtxoInventory", () => {
 
 describe("confirmSpendableUtxos live-indexer error messages", () => {
   it("explains that an unstable UniSat inventory blocks local signing and broadcast", async () => {
-    installWindowAndFetch(async () => Response.json({
+    installBrowserTimerMocks();
+    vi.stubGlobal("fetch", (async () => Response.json({
       error: "UTXO_CONFIRM_AVAILABLE_UNSTABLE_RESPONSE",
       code: "UTXO_CONFIRM_AVAILABLE_UNSTABLE_RESPONSE",
-    }, { status: 503 }));
+    }, { status: 503 })) as typeof fetch);
 
     await expect(confirmSpendableUtxos("FRACTAL_BITCOIN_MAINNET", ADDRESS, 10_000, [{
       txid: "a".repeat(64), vout: 0, satoshi: 12_000, scriptPk: "0014" + "11".repeat(20), sourceCursor: 0,
