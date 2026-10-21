@@ -36,6 +36,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Publishing is in the same job, so any failed check blocks Pages deployment.
+      - name: Type-check application
+        run: pnpm check
+
+      - name: Run client unit tests
+        run: pnpm exec vitest run client/src/lib
+
+      - name: Audit dependencies
+        run: pnpm audit --audit-level=low
+
       - name: Expose GitHub build metadata
         run: |
           echo "VITE_GITHUB_SHA=$(git rev-parse "$GITHUB_SHA")" >> "$GITHUB_ENV"
