@@ -24,3 +24,15 @@ Les secrets de publication `CLOUDFLARE_API_TOKEN` et `CLOUDFLARE_ACCOUNT_ID` son
 ## Sécurité UTXO
 
 Cette documentation ne change pas les règles de Local Vault. Les UTXO contenant ou pouvant contenir une inscription, un Rune ou un Alkane ne doivent jamais être sélectionnés pour payer des frais. Si le scan est incomplet, incohérent ou limité par l’API, l’action doit échouer de manière fermée plutôt que de supposer que les sorties sont sûres.
+
+## Paramètres de scan « My inscriptions »
+
+Le composant `client/src/components/UniSatWalletConnect.tsx` conserve les paramètres de scan de la branche Manus `manus/pokedex-update-oct2026` :
+- taille d’une page UniSat : `INSCRIPTIONS_PAGE_SIZE = 50` inscriptions;
+- nouveau scan depuis le curseur `0`, ou reprise depuis le curseur mémorisé pour charger la suite;
+- pagination jusqu’au total annoncé par UniSat ou jusqu’à une page vide;
+- validation des identifiants d’inscription et dédoublonnage avant affichage;
+- contrôle du réseau Bitcoin/Fractal et du compte UniSat actif;
+- annulation des scans obsolètes lors d’un rafraîchissement ou d’un changement de portefeuille.
+
+La taille de page 50 est déjà identique entre la branche Manus et la branche de correction actuelle; elle est conservée. La pagination permet de charger plusieurs pages, sans supposer qu’un seul appel contient toute la collection.
