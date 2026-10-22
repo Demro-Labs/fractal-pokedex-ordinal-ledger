@@ -14,8 +14,8 @@ const short = (value: string) => `${value.slice(0, 10)}…${value.slice(-8)}`;
 function explainUtxoFailure(cause: unknown) {
   const raw = cause instanceof Error ? cause.message : "Impossible de récupérer les UTXO actifs.";
   const code = raw.match(/\[([A-Z0-9_]+)\]/)?.[1] ?? "";
-  if (code.includes("UNISAT_KEY_MISSING")) return "Clé API UniSat Fractal absente côté serveur. Configurez le secret UNISAT_API_KEY dans le Worker, puis vérifiez son autorisation.";
-  if (code.includes("UNISAT_BITCOIN_API_KEY_MISSING")) return "Clé API UniSat Bitcoin absente côté serveur. Configurez le secret UNISAT_BITCOIN_API dans le Worker; la clé Fractal ne remplace pas la clé Bitcoin.";
+  if (code.includes("UNISAT_KEY_MISSING")) return "Clé API UniSat Fractal absente côté serveur. Configurez FRACTAL_BITCOIN_API dans le Worker (UNISAT_API_KEY reste accepté comme alias), puis vérifiez son autorisation.";
+  if (code.includes("UNISAT_BITCOIN_API_KEY_MISSING")) return "Clé API UniSat Bitcoin absente côté serveur. Configurez BITCOIN_API dans le Worker (UNISAT_BITCOIN_API reste accepté comme alias); la clé Fractal ne remplace pas la clé Bitcoin.";
   if (code.includes("UNISAT_RATE_LIMITED")) return "UniSat a signalé une limite de quota. Aucun transfert ne doit démarrer sur la base de données incomplètes. Attendez le renouvellement du quota ou vérifiez le plan et les journaux avant de relancer un scan complet.";
   if (code.includes("UNISAT_HTTP_403")) return "UniSat a refusé l’accès (HTTP 403). Selon la réponse upstream, cela peut être une limitation ou un refus d’autorisation. Vérifiez le quota/plan, les droits de la clé pour ce réseau et le code upstream/request ID dans les journaux du Worker. Aucun nouvel essai automatique n’est lancé; évitez de relancer immédiatement un scan complet.";
   if (code.includes("UNISAT_HTTP_401")) return "UniSat refuse l’authentification (HTTP 401). Vérifiez la clé API et l’en-tête Authorization côté Worker.";
