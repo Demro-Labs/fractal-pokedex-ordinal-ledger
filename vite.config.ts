@@ -206,7 +206,7 @@ function vitePluginStorageProxy(): Plugin {
 const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector(), vitePluginStorageProxy()];
 
 export default defineConfig({
-  base: process.env.GITHUB_ACTIONS ? "/fractal-pokedex-ordinal-ledger/" : "/",
+  base: process.env.GITHUB_ACTIONS ? "/pokedex/" : "/",
   plugins,
   resolve: {
     alias: {
