@@ -158,8 +158,9 @@ Important Worker routes include:
 ### BRC protocol paths
 
 - **Classic BRC-20 (4–5 character tickers)** remains on the classic UniSat indexer and its inscription-transfer flow.
-- **BRC20-Prog (6-character tickers)** uses a separate UniSat Bitcoin-only indexer route; no Fractal request is made. Its transfer flow uses the BRC-20 transfer inscription format and requires a fresh BIP-322 ownership proof before payment and transfer approvals on desktop and mobile.
-- **BRC2.0 programmable module** has a distinct deploy/call JSON composer (`p: brc20-prog`). It currently drafts and validates payloads only: it does not create/broadcast the inscription or the required activation transaction to `OP_RETURN "BRC20PROG"`. The optional RPC status check only probes `eth_blockNumber` and cannot verify module identity.
+- **BRC20-Prog / BRC2.0 (6-character tickers)** is Bitcoin-mainnet-only; its balance/module routes and UniSat module flow are disabled on Fractal Bitcoin. Classic BRC-20 remains available on both Bitcoin and Fractal.
+- **Alkanes and Alkanes collections** are Bitcoin-mainnet-only and are neither queried nor shown on Fractal Bitcoin.
+- **BRC2.0 UniSat flow** prepares the module inscription and activation transaction on Bitcoin mainnet with separate user approvals. The optional RPC status check only probes `eth_blockNumber` and cannot verify module identity. Ordi Wallet Local Vault signing remains blocked for BRC2.0 and Alkanes until dedicated local builders and independent protocol-output validation are implemented.
 
 The Pokédex uses the shared Punks Worker for `/api/brc20/balances`, `/api/brc20-prog/balances` (Bitcoin only), and `/api/brc20-prog/module/status`. Do not create a second Worker. Optional RPC secrets belong only in the shared Worker environment; see the Punks repository’s `workers/PRODUCTION-RUNBOOK.md`.
 
