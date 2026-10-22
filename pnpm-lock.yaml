@@ -5597,7 +5597,7 @@ snapshots:
     dependencies:
       debug: 4.4.3
       express: 4.21.2
-      ip-address: 10.7.3
+      ip-address: 10.7.4
     transitivePeerDependencies:
       - supports-color
 
