@@ -30,6 +30,7 @@ export function LocalVaultActiveUtxosPanel({ address, network }: { address: stri
     setBusy(true); setError(""); setItems([]); setPageIndex(0); setSourceTotal(null);
     try {
       const chain = network === "BITCOIN_MAINNET" ? "bitcoin" : "fractal", collected: ActiveUtxo[] = [];
+      const seenOutpoints = new Set<string>();
       let cursor = 0, total = 0, expectedTotal: number | null = null;
       let requestWindowStartedAt = Date.now(), requestsInWindow = 0;
       while (true) {
