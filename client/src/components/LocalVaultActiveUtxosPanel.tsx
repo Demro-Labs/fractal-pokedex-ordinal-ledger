@@ -30,6 +30,7 @@ export function LocalVaultActiveUtxosPanel({ address, network }: { address: stri
     setBusy(true); setError(""); setItems([]); setPageIndex(0); setSourceTotal(null);
     try {
       const chain = network === "BITCOIN_MAINNET" ? "bitcoin" : "fractal", collected: ActiveUtxo[] = [];
+      const seenOutpoints = new Set<string>();
       let cursor = 0, total = 0, expectedTotal: number | null = null;
       let requestWindowStartedAt = Date.now(), requestsInWindow = 0;
       while (true) {
@@ -46,8 +47,16 @@ export function LocalVaultActiveUtxosPanel({ address, network }: { address: stri
         if (!body || !("utxo" in body) || body.chain !== chain || body.address !== address || body.cursor !== cursor || !Array.isArray(body.utxo) ||
           !Number.isSafeInteger(body.scannedCount) || body.scannedCount < 0 || body.scannedCount > PAGE_SIZE || body.nextCursor !== cursor + body.scannedCount ||
           !Number.isSafeInteger(body.total) || body.total < body.nextCursor || body.utxo.length > body.scannedCount ||
-          (expectedTotal !== null && body.total !== expectedTotal)) throw new Error("L’indexeur n’a pas confirmé une page UTXO cohérente. Les données partielles ne sont pas affichées.");
+          (expectedTotal !== null && body.total !== expectedTotal) ||
+          body.utxo.some(item => !item || !/^[a-f0-9]{64}$/i.test(item.txid) || !Number.isSafeInteger(item.vout) || item.vout < 0 ||
+            !Number.isSafeInteger(item.satoshi) || item.satoshi < 0 ||
+            (item.height !== null && item.height !== undefined && (!Number.isSafeInteger(item.height) || item.height < 0)))) throw new Error("L’indexeur n’a pas confirmé une page UTXO cohérente. Les données partielles ne sont pas affichées.");
         expectedTotal ??= body.total;
+        for (const item of body.utxo) {
+          const outpoint = `${item.txid.toLowerCase()}:${item.vout}`;
+          if (seenOutpoints.has(outpoint)) throw new Error("Scan UTXO incohérent : une même sortie apparaît plusieurs fois. Les données partielles ne sont pas affichées.");
+          seenOutpoints.add(outpoint);
+        }
         collected.push(...body.utxo); total = body.total; cursor = body.nextCursor;
         if (cursor >= total) break;
         if (body.scannedCount === 0 || cursor > MAX_UTXO_CURSOR || total > MAX_UTXO_CURSOR) throw new Error(`Scan UTXO incomplet : ${cursor} sorties vérifiées sur ${total}. L’indexeur n’a pas avancé ou sa limite de curseur (1 000 000) est atteinte. Aucune liste partielle n’est affichée.`);
