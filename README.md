@@ -4,8 +4,8 @@ A production-ready visual archive for the **Fractal Pokédex Ordinal Ledger**, a
 
 ## Production site
 
-- **Live application:** https://demro-labs.github.io/fractal-pokedex-ordinal-ledger/
-- **Repository:** https://github.com/Demro-Labs/fractal-pokedex-ordinal-ledger
+- **Live application:** https://ordi-labs.github.io/pokedex/
+- **Repository:** https://github.com/ordi-labs/pokedex
 - **Shared live Worker:** https://fractal-ordinal-live.servostar23.workers.dev
 
 ## Product overview
