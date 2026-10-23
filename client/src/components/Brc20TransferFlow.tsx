@@ -297,7 +297,22 @@ export function Brc20TransferFlow({
       let total: number | null = null;
       for (let start = 0; start < 10_000; ) {
         const query = new URLSearchParams({ address, ticker, chain: network, start: String(start), limit: String(pageSize) });
-        const response = await fetch(`${API_BASE}/api/brc20/transferable?${query}`, { cache: "no-store", headers: { Accept: "application/json" } });
+        // Retry transient Worker/UniSat failures so one failed page does not
+        // force the user to restart the entire BRC-20 inventory scan.
+        // Client/auth/validation errors are not retried.
+        let response: Response | null = null;
+        let lastFetchError: unknown = null;
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          try {
+            const candidate = await fetch(`${API_BASE}/api/brc20/transferable?${query}`, { cache: "no-store", headers: { Accept: "application/json" } });
+            response = candidate;
+            if (candidate.ok || (candidate.status !== 429 && candidate.status < 500)) break;
+          } catch (cause) {
+            lastFetchError = cause;
+          }
+          if (attempt < 2) await new Promise(resolve => window.setTimeout(resolve, 350 * (attempt + 1)));
+        }
+        if (!response) throw new Error(lastFetchError instanceof Error ? lastFetchError.message : "Le Worker BRC-20 est temporairement inaccessible après trois tentatives.");
         const payload = await response.json().catch(() => null) as {
           network?: string; address?: string; ticker?: string; start?: number; total?: number;
           detail?: Array<{ inscriptionId?: string; amount?: string }>; error?: string;
