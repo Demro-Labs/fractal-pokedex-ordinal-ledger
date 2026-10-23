@@ -6,13 +6,24 @@
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone"],
+  "display_override": [
+    "window-controls-overlay",
+    "standalone"
+  ],
   "orientation": "portrait-primary",
-  "background_color": "#0b0d10",
-  "theme_color": "#0b0d10",
-  "categories": ["art", "entertainment", "finance"],
+  "background_color": "#F7931A",
+  "theme_color": "#F7931A",
+  "categories": [
+    "art",
+    "entertainment",
+    "finance"
+  ],
   "icons": [
-    {"src":"./assets/brand/fractal-ordinals-icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
-    {"src":"./assets/brand/fractal-ordinals-icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+    {
+      "src": "./assets/brand/ordinal-punks-bitcoin.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
   ]
 }
