@@ -50,7 +50,7 @@ const HERO_AVIF_URL = `${ASSET_BASE}assets/brand/pokedex-hero.avif`;
 const HERO_MOBILE_AVIF_URL = `${ASSET_BASE}assets/brand/pokedex-hero-mobile.avif`;
 const SOCIAL_ASSET_BASE = `${ASSET_BASE}assets/brand/social/`;
 const FRACTAL_ORDINALS_URL = `${ASSET_BASE}assets/brand/fractal-ordinals.jpeg`;
-const POKEDEX_LOGO_URL = `${ASSET_BASE}assets/brand/pokedex-logo.png`;
+const POKEDEX_LOGO_URL = `${ASSET_BASE}assets/brand/ordinal-punks-bitcoin.svg`;
 type Trait = { trait_type: string; value: string };
 type PokemonRecord = {
   id: string;
