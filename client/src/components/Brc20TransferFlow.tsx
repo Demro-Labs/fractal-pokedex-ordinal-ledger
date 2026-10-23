@@ -303,6 +303,7 @@ export function Brc20TransferFlow({
         let response: Response | null = null;
         let lastFetchError: unknown = null;
         for (let attempt = 0; attempt < 3; attempt += 1) {
+          response = null;
           try {
             const candidate = await fetch(`${API_BASE}/api/brc20/transferable?${query}`, { cache: "no-store", headers: { Accept: "application/json" } });
             response = candidate;
