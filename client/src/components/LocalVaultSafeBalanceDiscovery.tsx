@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Loader2, Search } from "lucide-react";
-import { getSpendableUtxos, getUtxoBalanceSummary, scanAddressUtxoInventory } from "@/lib/mempool";
+import { getSpendableUtxos, getUtxoBalanceSummary, getUtxoAvailabilityDiagnostics, scanAddressUtxoInventory, type UtxoAvailabilityDiagnostics } from "@/lib/mempool";
 import { ADDRESS_SPECS, fetchAddressBalance, type AddressType, type OrdiNetwork, type OrdiWalletRecord } from "@/lib/ordi-wallet";
 
 type ScanRow = {
@@ -27,6 +27,8 @@ type ScanRow = {
   consistencyError?: string;
   rejectionCounts?: Record<string, number>;
   rejectionSats?: Record<string, number>;
+  availabilityDiagnostics?: UtxoAvailabilityDiagnostics;
+  availabilityDiagnosticsError?: string;
 };
 
 function errorMessage(reason: unknown, fallback: string) {
@@ -147,6 +149,16 @@ export function LocalVaultSafeBalanceDiscovery({ wallet, network, selectedAddres
         }
         results[results.length - 1] = row;
         setRows([...results]);
+
+        setProgress(`${label} · comparaison inventaire/UniSat`);
+        try {
+          const availabilityDiagnostics = await getUtxoAvailabilityDiagnostics(network, address);
+          row = { ...row, availabilityDiagnostics };
+        } catch (error) {
+          row = { ...row, availabilityDiagnosticsError: errorMessage(error, "Diagnostic de disponibilité indisponible.") };
+        }
+        results[results.length - 1] = row;
+        setRows([...results]);
       }
       if (results.some(row => row.balanceError || row.safeError || row.summaryError || row.inventoryError || row.consistencyError)) {
         setNotice("Scan terminé avec erreurs signalées par adresse. Une erreur d’indexeur n’est pas affichée comme un solde zéro.");
@@ -188,6 +200,8 @@ export function LocalVaultSafeBalanceDiscovery({ wallet, network, selectedAddres
             <p className="font-mono text-[9px] text-[#9ea7b3]">Mempool : {row.pendingSats === null ? "—" : `${row.pendingSats.toLocaleString("fr-FR")} sats`}</p>
             <p className="font-mono text-[9px] text-[#9fe0bd]">Sûrs vérifiés pour frais (sous-ensemble) : {row.safeSats === null ? "—" : `${row.safeSats.toLocaleString("fr-FR")} sats · ${row.safeUtxos} UTXO`}</p>
             {row.rejectionCounts && <p className="font-mono text-[9px] leading-4 text-[#9ea7b3]">Rejets (UTXO) : {Object.entries(row.rejectionCounts).filter(([, count]) => count > 0).map(([key, count]) => `${({ identityMismatch: "adresse/outpoint incohérent", invalidValue: "montant invalide/trop faible", invalidScript: "script invalide", unconfirmedOrInvalidHeight: "non confirmé/hauteur invalide", invalidFlags: "métadonnées invalides", hasInscriptionOrUnknown: "inscription/statut inconnu", detailMismatch: "détail incohérent", spentOrUnknown: "dépensé/état inconnu", hasRunes: "Rune", hasAlkanes: "Alkane" } as Record<string, string>)[key] ?? key}: ${count}`).join(" · ") || "aucun"}</p>}
+            {row.availabilityDiagnostics && <div className="sm:col-span-2 border border-[#343b44] p-2 font-mono text-[9px] leading-4 text-[#c4ccd5]"><p>Diagnostic disponibilité (lecture seule) : inventaire {row.availabilityDiagnostics.inventoryScanned}/{row.availabilityDiagnostics.inventoryTotal ?? "?"} · disponibles UniSat {row.availabilityDiagnostics.availableScanned}/{row.availabilityDiagnostics.availableTotal ?? "?"} · sorties absentes de la liste disponible : {row.availabilityDiagnostics.missingCount}</p><p>Motifs observés : {Object.entries(row.availabilityDiagnostics.counts).filter(([, count]) => count > 0).map(([key, count]) => `${key}: ${count}`).join(" · ") || "aucun motif attribué"}</p><p>Valeurs associées : {Object.entries(row.availabilityDiagnostics.sats).filter(([, sats]) => sats > 0).map(([key, sats]) => `${key}: ${sats.toLocaleString("fr-FR")} sats`).join(" · ") || "aucune valeur attribuée"}</p><p className="text-[#f2bd63]">{row.availabilityDiagnostics.note}{row.availabilityDiagnostics.inventoryHasMore || row.availabilityDiagnostics.availableHasMore ? " Attention : la réponse signale des pages supplémentaires; diagnostic incomplet." : ""} Ce diagnostic n’autorise jamais la dépense d’une sortie.</p></div>}
+            {row.availabilityDiagnosticsError && <p className="sm:col-span-2 break-words font-mono text-[9px] leading-4 text-[#e6a69b]">Diagnostic inventaire/UniSat : {row.availabilityDiagnosticsError}</p>}
             {row.rejectionSats && <p className="font-mono text-[9px] leading-4 text-[#9ea7b3]">Valeur rejetée : {Object.entries(row.rejectionSats).filter(([, sats]) => sats > 0).map(([key, sats]) => `${({ unconfirmedOrInvalidHeight: "non confirmé", invalidFlags: "métadonnées invalides", hasInscriptionOrUnknown: "inscription/statut inconnu", detailMismatch: "détail incohérent", spentOrUnknown: "dépensé/état inconnu", hasRunes: "Rune", hasAlkanes: "Alkane" } as Record<string, string>)[key] ?? key}: ${sats.toLocaleString("fr-FR")} sats`).join(" · ") || "aucune"}</p>}
           </div>
           <p className="mt-1 break-all font-mono text-[9px] leading-4 text-[#718092]">{row.address || "Adresse absente"}</p>
