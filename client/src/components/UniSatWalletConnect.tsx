@@ -552,9 +552,13 @@ export function UniSatWalletConnect({ site = "pokedex" }: { site?: "punks" | "po
     if (!provider) {
       setProviderAvailable(false);
       if (openUniSatMobileWallet()) {
-        setError("Opening this site inside UniSat Wallet. Approve the request, then connect from the UniSat in-app browser.");
+        setError("Opening this site in UniSat Wallet. If it does not open, launch UniSat Wallet manually, open its browser, navigate to this site, then press Connect UniSat.");
+      } else if (window.matchMedia("(display-mode: standalone)").matches || (navigator as Navigator & { standalone?: boolean }).standalone === true) {
+        setError("UniSat is not available inside this installed app. Opening the site in your browser; if no tab opens, use the app menu to open this site in Chrome or Brave with the UniSat extension enabled.");
+        const opened = window.open(window.location.href, "_blank");
+        if (opened) opened.opener = null;
       } else {
-        setError("Install or enable the official UniSat Wallet extension, then try again.");
+        setError("UniSat Wallet is not available in this browser. Install or enable the official UniSat extension and reload this page. On mobile, open this site from UniSat Wallet's own browser.");
       }
       return;
     }
