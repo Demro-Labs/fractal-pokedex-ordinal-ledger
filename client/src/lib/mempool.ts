@@ -418,6 +418,10 @@ export async function getSpendableUtxos(network: string, address: string, minimu
     const safe = page.utxo.map((item): Record<string, unknown> => ({
       ...item,
       satoshi: normalizeSatoshiValue(item),
+      // isLowFee is advisory metadata; missing/null is not unsafe after the Worker has
+      // independently attested exact outpoint, script, value, confirmation and asset status.
+      // Keep malformed non-boolean values unchanged so the strict filter rejects them.
+      isLowFee: item.isLowFee === undefined || item.isLowFee === null ? false : item.isLowFee,
     })).filter((item): item is Record<string, unknown> & SpendableUtxo =>
       item.address === address && typeof item.txid === "string" && /^[a-f0-9]{64}$/i.test(item.txid) &&
       typeof item.vout === "number" && Number.isSafeInteger(item.vout) && item.vout >= 0 &&
