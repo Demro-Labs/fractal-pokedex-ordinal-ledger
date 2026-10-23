@@ -552,3 +552,27 @@ export async function trackMempoolTransaction(txid: string, network: string, onU
   }
   return emit("timeout", "No confirmation after 30 minutes. Verify la transaction dans Mempool.");
 }
+
+
+export type UtxoAvailabilityDiagnostics = {
+  chain: string;
+  inventoryScanned: number;
+  availableScanned: number;
+  inventoryTotal: number | null;
+  availableTotal: number | null;
+  inventoryHasMore: boolean;
+  availableHasMore: boolean;
+  missingCount: number;
+  counts: Record<string, number>;
+  sats: Record<string, number>;
+  diagnosticOnly: true;
+  note: string;
+};
+
+/** Read-only reconciliation of all indexed outputs against UniSat's available list. Never authorizes spending. */
+export async function getUtxoAvailabilityDiagnostics(network: string, address: string): Promise<UtxoAvailabilityDiagnostics> {
+  const chain = network === "BITCOIN_MAINNET" ? "bitcoin" : network === "FRACTAL_BITCOIN_MAINNET" ? "fractal" : null;
+  if (!chain || !address || address.length > 100) throw new Error("Réseau ou adresse invalide pour le diagnostic de disponibilité UTXO.");
+  const query = new URLSearchParams({ chain, address });
+  return requestJson<UtxoAvailabilityDiagnostics>(`${LIVE_DATA_API_BASE}/api/utxo-availability-diagnostics?${query}`, 15_000);
+}
