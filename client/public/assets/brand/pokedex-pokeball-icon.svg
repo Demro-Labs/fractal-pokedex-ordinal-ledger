@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>Pokédex Poké Ball</title>
+  <defs>
+    <clipPath id="ball"><circle cx="256" cy="256" r="174"/></clipPath>
+    <clipPath id="shell"><circle cx="256" cy="256" r="224"/></clipPath>
+  </defs>
+  <circle cx="256" cy="256" r="232" fill="#aa2b2d"/>
+  <circle cx="256" cy="256" r="224" fill="#242425"/>
+  <g clip-path="url(#shell)">
+    <path d="M255 30 L482 257 L482 488 L290 488 L118 316 Z" fill="#000" opacity=".18"/>
+  </g>
+  <circle cx="256" cy="256" r="174" fill="#fff"/>
+  <g clip-path="url(#ball)">
+    <path d="M82 82H430V256H82Z" fill="#c93034"/>
+  </g>
+  <circle cx="256" cy="256" r="174" fill="none" stroke="#090909" stroke-width="3"/>
+  <path d="M82 256H430" fill="none" stroke="#080808" stroke-width="10"/>
+  <circle cx="256" cy="256" r="54" fill="#080808"/>
+  <circle cx="256" cy="256" r="44" fill="#fff"/>
+</svg>
