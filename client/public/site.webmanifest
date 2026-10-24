@@ -12,11 +12,6 @@
   "theme_color": "#0b0d10",
   "categories": ["art", "entertainment", "finance"],
   "icons": [
-    {
-      "src": "./assets/brand/pokedex-pokeball-icon.svg?v=3",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    }
+    { "src": "./assets/brand/pokedex-pokeball-icon.svg?v=6", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ]
 }
